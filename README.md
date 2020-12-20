@@ -33,6 +33,7 @@ To convert images to ASCII art, use `convert_image.py`
 ### Examples
 
 Converting `fox.png` and keeping 50% of pixels (skipping every other pixel). Final result will be `fox.txt.jpg`
+
 ```python convert_image.py fox.png fox 50```
 
 ## Video conversion
@@ -53,4 +54,5 @@ To convert videos to ASCII art, use `convert_video.py`
 ### Examples
 
 Converting `funnyCatVideo.mp4`, keeping a third of the frames, and reducing image quality by 30%. Final result will be `funnyCatVideo.txt.mp4`
+
 ```python convert_video.py funnyCatVideo.mp4 funnyCatVideo 3 30```
