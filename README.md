@@ -21,6 +21,7 @@ These can be installed through `pip install -r requirements.txt`
 ## Image conversion
 
 To convert images to ASCII art, use `convert_image.py`
+
 ```python convert_image.py path_to_image output_path image_reducer```
 
 ### Parameters explanation:
@@ -28,7 +29,7 @@ To convert images to ASCII art, use `convert_image.py`
 - `output_path`: path to output the final result
 - `image_reducer`: percentage of image pixels to preserver
   - Use 100 to keep original
-  - It is **highly recommended** to decrease this in order to be performant
+  - It is **highly recommended** to *decrease* this in order to be performant
   
 ### Examples
 
@@ -39,6 +40,7 @@ Converting `fox.png` and keeping 50% of pixels (skipping every other pixel). Fin
 ## Video conversion
 
 To convert videos to ASCII art, use `convert_video.py`
+
 ```python convert_video.py path_to_video output_path frame_frequency image_reducer```
 
 ### Parameters explanation:
@@ -46,10 +48,10 @@ To convert videos to ASCII art, use `convert_video.py`
 - `output_path`: path to output the final result
 - `frame_frequency`: determines how many frames to skip before capturing/converting a frame image
   - Keep 1 to keep all frames
-  - It is **highly recommended** to increase this in order to be performant
+  - It is **highly recommended** to *increase* this in order to be performant
 - `image_reducer`: percentage of image pixels to preserver
   - 100 to keep original
-  - It is **highly recommended** to decrease this in order to be performant
+  - It is **highly recommended** to *decrease* this in order to be performant
   
 ### Examples
 
