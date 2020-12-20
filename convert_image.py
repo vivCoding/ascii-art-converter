@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import sys
 from PIL import Image, ImageFont, ImageDraw
 
 def convert_image(image, reducer=100, fontSize=10, spacing=1.1, maxsize=None, keepTxt=False, output_txt_file="output", logs=False):
@@ -26,9 +27,7 @@ def convert_image(image, reducer=100, fontSize=10, spacing=1.1, maxsize=None, ke
     """
 
     try:
-        if logs:
-            print ("")
-            print ("Initial configuring...")
+        if logs : print ("Initial configuring...")
         # converting image to grayscale and getting image size
         img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         rows = len(img)
@@ -79,14 +78,14 @@ def convert_image(image, reducer=100, fontSize=10, spacing=1.1, maxsize=None, ke
             write_file.close()
 
         return output_img
-    except:
+    except Exception as e:
         print ("")
-        print ("nope")
+        print ("Uh oh image converting went wrong!")
         exit(0)
 
 
 def convert_image_from_path_and_save(image_path, output_file="output", reducer=100, fontSize=10, spacing=1.1, maxsize=None, keepTxt=False, logs=True):
-    """Converts a cv2 image from a given path into ASCII art, and saves it to disk
+    """Converts a cv2 image from a given path into ASCII art and saves it to disk
 
     Parameters
     ---------
@@ -104,8 +103,18 @@ def convert_image_from_path_and_save(image_path, output_file="output", reducer=1
     output = convert_image(img, reducer=reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, keepTxt=keepTxt, output_txt_file=output_file, logs=logs)
     if logs : print ("Saving image...")
     output.save(output_file + ".txt.jpg")
-    if logs : print ("Saved to " + output_file)
+    if logs : print ("Saved to " + output_file + ".txt.jpg")
 
+if __name__ == "__main__":
+    """You can also call this file with arguments
+    """
 
-# convert_image(cv2.imread("test_images/front.png"), 25, logs=True).save("output.jpg")
-# convert_image_from_path_and_save("test_images/FRC5010TeamPicture_2019-2020.jpg", "frc", 50, keepTxt=True)
+    try:
+        args = sys.argv[1:]
+        image_file = args[0]
+        output_file = args[1]
+        reducer = np.int_(args[2])
+        convert_image_from_path_and_save(image_file, output_file, reducer=reducer)
+    except IndexError:
+        print ("Invalid parameters. Make sure you have all parameters!")
+        print ("image output reducer")
