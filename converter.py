@@ -14,6 +14,7 @@ def convert_image(image_path, output_file="output", reducer=100, fontSize=10, sp
     print ("Initial configuring...")
     fontSize = 10
     spacing = 1.1
+    reducer = np.int_(100 / reducer)
     scale = fontSize * 0.8 / reducer * spacing
     # create new image with white background
     output_img = Image.new("L", (np.int_(cols * scale), np.int_(rows * scale)), color=0)
@@ -30,12 +31,8 @@ def convert_image(image_path, output_file="output", reducer=100, fontSize=10, sp
     div = np.amax(img) / (len(chars) - 1)
 
     print("Creating...")
-    checkpoint_increments = np.int_(rows / 12)
-    checkpoint = checkpoint_increments
     for row in range(0, rows, reducer):
-        if (row > checkpoint):
-            print ("Completed " + str(np.int_(checkpoint / rows * 100)) + "%...")
-            checkpoint += checkpoint_increments
+        print ("Converted rows", row, "/", rows, end="\r")
         currentRow = row * scale
         for col in range(0, cols, reducer):
             val = np.int_(img[row, col] / div)
@@ -43,29 +40,30 @@ def convert_image(image_path, output_file="output", reducer=100, fontSize=10, sp
             # we must write to exact pixel location, as to avoid varying line lengths
             draw.text((col * scale, currentRow), chars[val], 255, font=font)
         write_file.write("\n")
+    print ("")
     print ("Completed creation!")
 
     # set max image
-    # print ("Reducing image size...")
-    # maxsize = (1920, 1080)
-    # output_img.thumbnail(maxsize, Image.NEAREST)
+    if (maxsize is not None):
+        print ("Reducing image size to " + str(maxsize) + "...")
+        maxsize = (1920, 1080)
+        output_img.thumbnail(maxsize, Image.NEAREST)
 
     print ("Saving files...")
     # save the files
     write_file.close()
-    output_img.save(output_file + ".txt.png")
+    output_img.save(output_file + ".txt.jpg")
     print ("Saved to " + output_file)
 
-def main():
+def main_convert_image():
     try:
         # getting arguments
         args = sys.argv[1:]
         image_file = args[0]
         output_file = args[1]
-        reducer = np.int_(100 / np.int_(args[2]))
+        reducer = np.int_(args[2])
         convert_image(image_file, output_file, reducer)
     except IndexError:
         print ("Invalid parameters. Make sure you have all parameters!")
-        print ("imageToConvert nameForOutput reducer")
 
-main()
+main_convert_image()
