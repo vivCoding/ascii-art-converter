@@ -2,6 +2,10 @@ import numpy as np
 import cv2
 import sys
 from PIL import Image, ImageFont, ImageDraw
+import threading
+import time
+
+tests = 10
 
 def convert_image(image, reducer=100, fontSize=10, spacing=1.1, maxsize=None, keepTxt=False, output_txt_file="output", logs=False):
     """Converts a cv2 image object into ASCII art
@@ -36,10 +40,10 @@ def convert_image(image, reducer=100, fontSize=10, spacing=1.1, maxsize=None, ke
         # set up image scaling based on font size and line spacing
         fontSize = 10
         spacing = 1.1
-        reducer = np.int_(100 / reducer)
+        reducer = int(100 / reducer)
         scale = fontSize * 0.8 / reducer * spacing
         # create new image with black bacground (because white text on black looks cooler)
-        output_img = Image.new("L", (np.int_(cols * scale), np.int_(rows * scale)), color=0)
+        output_img = Image.new("L", (int(cols * scale), int(rows * scale)), color=0)
         draw = ImageDraw.Draw(output_img)
         # load ttf font
         font = ImageFont.truetype("NotoMono-Regular.ttf", fontSize, encoding="unic")
@@ -53,8 +57,9 @@ def convert_image(image, reducer=100, fontSize=10, spacing=1.1, maxsize=None, ke
         div = np.amax(img) / (len(chars) - 1)
 
         if logs : print("Creating...")
+
         for row in range(0, rows, reducer):
-            if logs : print ("Converted rows", row, "/", rows, end="\r")
+            print ("Converted rows", row, "/", rows, end="\r")
             currentRow = row * scale
             for col in range(0, cols, reducer):
                 val = np.int_(img[row, col] / div)
@@ -63,6 +68,34 @@ def convert_image(image, reducer=100, fontSize=10, spacing=1.1, maxsize=None, ke
                 if keepTxt : write_file.write(chars[val] + " ")
             if keepTxt : write_file.write("\n")
         if keepTxt : write_file.close()
+
+        # def convert_rows(start, end, id=1):
+        #     thread_start = time.thread_time()
+        #     print ("Thread", str(id), "is starting at", thread_start)
+        #     for row in range(start, end, reducer):
+        #         # if logs : print ("Converted rows", row, "/", rows, end="\r")
+        #         currentRow = row * scale
+        #         for col in range(0, cols, reducer):
+        #             val = int(img[row, col] / div)
+        #             # we must write to exact pixel location, as to avoid varying line lengths
+        #             draw.text((col * scale, currentRow), chars[val], 255, font=font)
+        #     print ("Thread", id ,"time took:", str(time.thread_time() - thread_start), "secs")
+        #     print ("Thread", id, "ended at", time.time() - start_time, "secs")
+
+        # sections = 4
+        # r = int(rows / sections)
+        # threads = []
+        # print ("Starting threads...")
+        # for section in range(sections):
+        #     starting = r * section
+        #     convert_thread = threading.Thread(target=convert_rows, kwargs={"start" : starting, "end" : starting + r, "id" : section})
+        #     convert_thread.start()
+        #     threads.append(convert_thread)
+
+        # print ("Waiting...")
+        # for t in threads:
+        #     t.join()
+        
         if logs:
             print ("")
             print ("Completed creation!")
@@ -97,24 +130,31 @@ def convert_image_from_path_and_save(image_path, output_file="output", reducer=1
     """
     if logs : print ("Loading image...")
     img = cv2.imread(image_path)
-    if img.size == 0:
-        print ("Could not read image. Please enter a valid image file!")
+    try:
+        if img.size == 0 : print ("bad file")
+        output = convert_image(img, reducer=reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, keepTxt=keepTxt, output_txt_file=output_file, logs=logs)
+        if logs : print ("Saving image...")
+        output.save(output_file + ".txt.jpg")
+        if logs : print ("Saved to " + output_file + ".txt.jpg")
+    except AttributeError:
+        print ("File", image_path,"does not exist!")
         exit(0)
-    output = convert_image(img, reducer=reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, keepTxt=keepTxt, output_txt_file=output_file, logs=logs)
-    if logs : print ("Saving image...")
-    output.save(output_file + ".txt.jpg")
-    if logs : print ("Saved to " + output_file + ".txt.jpg")
 
 if __name__ == "__main__":
     """You can also call this file with arguments
     """
 
-    try:
-        args = sys.argv[1:]
-        image_file = args[0]
-        output_file = args[1]
-        reducer = np.int_(args[2])
-        convert_image_from_path_and_save(image_file, output_file, reducer=reducer)
-    except IndexError:
-        print ("Invalid parameters. Make sure you have all parameters!")
-        print ("image output reducer")
+    start_time = time.time()
+    convert_image_from_path_and_save("images/lake.jpg", "output/lake", reducer=50)
+    print ("Time took:", str(time.time() - start_time), "secs")
+    # try:
+    #     start_time = time.time()
+    #     args = sys.argv[1:]
+    #     image_file = args[0]
+    #     output_file = args[1]
+    #     reducer = int(args[2])
+    #     convert_image_from_path_and_save(image_file, output_file, reducer=reducer)
+    #     print ("Time took:", str(time.time() - start_time), "secs")
+    # except IndexError:
+    #     print ("Invalid parameters. Make sure you have all parameters!")
+    #     print ("image output reducer")
