@@ -5,18 +5,17 @@ Images are automatically outputted as `.txt.jpg` files, and videos as `.txt.mp4`
 
 (The `.txt` is included to avoid accidentally overwriting original image)
 
+Developed on Python 3.8.6
+
 ## Installation
 
 Be sure you have Python 3 or greater installed.
 
-Developed on Python 3.8.6
+Dependencies are found in `requirements.txt`. They can be installed using command: `pip install -r requirements.txt`
 
-### Dependencies:
-- numpy
-- opencv-python
-- Pillow
+**Known issue with Pillow:** https://github.com/python-pillow/Pillow/issues/4225
 
-These can be installed through `pip install -r requirements.txt`
+Solution: `pip install --compile --install-option=-O1 Pillow`
 
 ## Image conversion
 
