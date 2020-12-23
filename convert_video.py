@@ -16,6 +16,7 @@ def save_frames(start, end, video, batch_folder, frame_frequency, process_id=1):
     total_frames = end - start
     frames_count = 0
     frames_included = 0
+    # we utitlize multithreading for writing to disk
     threads = []
     process_start = time.process_time()
     print ("- Process", process_id, "started at", process_start)
@@ -27,44 +28,28 @@ def save_frames(start, end, video, batch_folder, frame_frequency, process_id=1):
         if frames_count % frame_frequency == 0:
             frames_included += 1
             filename = batch_folder + str(frames_included) + ".jpg"
-            # cv2.imwrite(filename, frame)
             write_thread = threading.Thread(target=cv2.imwrite, args=(filename, frame))
             write_thread.start()
             threads.append(write_thread)
         print ("Saved frames:", frames_included, "/", total_frames, end="\r")
-    # for t in threads:
-    #     t.join()
+    for t in threads:
+        t.join()
     capture.release()
     print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
 
-
-# def convert_and_save_image(filename, image_reducer, fontSize, spacing, maxsize):
-#     # img = cv2.imread(filename, 2)
-#     # converted_img = np.array(convert_image(img, reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, logs=False))
-#     convert_image_from_path_and_save(filename + ".jpg", filename, reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, logs=False)
-#     # os.remove(filename + ".jpg")
-
 def convert_batch(batch_folder, frames_per_batch, image_reducer, fontSize, spacing, maxsize, process_id):
-    threads = []
+    # take every frame in batch folder and convert them
     process_start = time.process_time()
     print ("- Process", process_id, "started at", process_start, frames_per_batch)
     for i in range(1, frames_per_batch + 1):
         filename =  batch_folder + str(i)
         convert_image_from_path_and_save(filename + ".jpg", filename, reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, logs=False)
-        # convert_and_save_image(filename, image_reducer, fontSize, spacing, maxsize)
-        # img = cv2.imread(filename, 2)
-        # converted_img = np.array(convert_image(img, reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, logs=False))
-        # write_thread = threading.Thread(target=cv2.imwrite, args=(filename, converted_img))
-        # write_thread.start()
-        # threads.append(write_thread)
         print ("Converted frames", i, "/", frames_per_batch, end="\r")
-    for t in threads:
-        t.join()
     print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
 
 
 def convert_video_from_path_and_save(video, output="output", frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1, maxsize=None):
-    """Converts video from given path to ASCII art and saves it to disk
+    """Converts video from given path to ASCII art and saves it to disk as .txt.mp4 format
 
     Parameters
     --------
@@ -94,86 +79,62 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
 
     capture.release()
 
-    """
-    TODO: multithread this shit
-    - create a new thread when saving a frame to file. Or split up video read at different places, and multithread read them
-    - after saving files, multithread the conversion to ascii
-    - after converting, single thread read them again and write to video
-    """
+    # First, we grab all the frames we need and store them in a temp folder
+    # After that, we convert all the image frames in the temp folder, and save them back in the temp folder
+    # Then, we write them to video and save to disk
+    # To utilize mutli processing, we separate grabbing frames and converting the frames into batches
 
+    # initial setup
     batches = multiprocessing.cpu_count()
     frames_per_batch = int(total_frames / batches / frame_frequency)
-    temp_folder = "./temp/"
-    os.mkdir(temp_folder)
+    temp_folder = "./temp_convert_video/"
+    try:
+        os.mkdir(temp_folder)
+    except FileExistsError:
+        print ("Cannot create a temporary folder.", temp_folder, "already exists.")
+        print ("Please delete or rename this folder to something else")
+        exit(0)
 
-    if __name__ == "__main__":
-        all_args = []
-        for batch in range(batches):
-            starting_frame = batch * frames_per_batch * frame_frequency
-            batch_folder = temp_folder + str(batch) + "/"
-            os.mkdir(batch_folder)
-            # TODO: catch if folder already exists
-            args = (
-                starting_frame,
-                starting_frame + frames_per_batch * frame_frequency,
-                video,
-                batch_folder,
-                frame_frequency,
-                batch
-            )
-            all_args.append(args)
-        print("Getting frames...")
-        with multiprocessing.Pool(batches) as p:
-            p.starmap(save_frames, all_args)
-            p.close()
-            p.join()
+    # grab the frames, and write to separate batch folders
+    all_args = []
+    for batch in range(batches):
+        starting_frame = batch * frames_per_batch * frame_frequency
+        batch_folder = temp_folder + str(batch) + "/"
+        os.mkdir(batch_folder)
+        args = (
+            starting_frame,
+            starting_frame + frames_per_batch * frame_frequency,
+            video,
+            batch_folder,
+            frame_frequency,
+            batch
+        )
+        all_args.append(args)
+    print("Getting frames...")
+    with multiprocessing.Pool(batches) as p:
+        p.starmap(save_frames, all_args)
+        p.close()
+        p.join()
 
-    # begin conversion
-    
-    # if __name__ == "__main__":
-    #     all_args = []
-    #     for batch in range(batches):
-    #         batch_folder = temp_folder + str(batch) + "/"
-    #         args = (
-    #             batch_folder,
-    #             frames_per_batch,
-    #             image_reducer,
-    #             fontSize,
-    #             spacing,
-    #             maxsize,
-    #             batch
-    #         )
-    #         all_args.append(args)
-    #         # convert_batch(batch_folder, frames_per_batch, image_reducer, fontSize, spacing, maxsize, batch)
-    #     print("Converting frames...")
-    #     with multiprocessing.Pool(batches) as p:
-    #         p.starmap(convert_batch, all_args)
-    #         p.close()
-    #         p.join()
-    # if __name__ == "__main__":
-    #     all_args = []
-    #     for batch in range(batches):
-    #         batch_folder = temp_folder + str(batch) + "/"
-    #         for i in range(1, frames_per_batch + 1):
-    #             filename =  batch_folder + str(i)
-    #             args = (filename + ".jpg", filename, image_reducer, fontSize, spacing, maxsize, False, False)
-    #             all_args.append(args)
-    #             # convert_image_from_path_and_save(filename + ".jpg", filename, reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, logs=False)
-    #     print("Converting frames...")
-    #     with multiprocessing.Pool(batches) as p:
-    #         p.starmap(convert_image_from_path_and_save, all_args)
-    #         # print (count)
-    #         p.close()
-    #         p.join()
-    if __name__ == "__main__":
-        print("Converting frames...")
-        for batch in range(batches):
-            batch_folder = temp_folder + str(batch) + "/"
-            for i in range(1, frames_per_batch + 1):
-                filename =  batch_folder + str(i)
-                convert_image_from_path_and_save(filename + ".jpg", filename, reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, logs=False)
-                print (str(i), "/", str(frames_per_batch), end="\r")
-            print ("")
+    # convert all the frames in each batch folder
+    all_args = []
+    for batch in range(batches):
+        batch_folder = temp_folder + str(batch) + "/"
+        args = (
+            batch_folder,
+            frames_per_batch,
+            image_reducer,
+            fontSize,
+            spacing,
+            maxsize,
+            batch
+        )
+        all_args.append(args)
+    print("Converting frames...")
+    with multiprocessing.Pool(batches) as p:
+        p.starmap(convert_batch, all_args)
+        p.close()
+        p.join()
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     # set this none, as we don't know the final size of our images
@@ -184,7 +145,6 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
         batch_folder = temp_folder + str(batch - 1) + "/"
         for i in range(1, frames_per_batch + 1):
             img = cv2.imread(batch_folder + str(i) + ".txt.jpg", 2) 
-            # img = cv2.imread(batch_folder + str(i) + ".jpg", 2) 
             if video_out is None:
                 height, width = img.shape
                 size = (width, height)
@@ -194,24 +154,6 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
         print("- Finished writing batch", batch, "/", batches, "at", str(time.time() - start_time))
     shutil.rmtree(temp_folder)
     video_out.release()
-
-    # for i in range(total_frames + 1):
-    #     ret, frame = capture.read()
-    #     if ret is False:
-    #         continue
-    #     frames_count += 1
-    #     if frames_count % frame_frequency == 0:
-    #         frames_included += 1
-    #         print ("")
-    #         converted = np.array(convert_image(frame, reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, logs=True))
-    #         if video_out is None:
-    #             height, width = converted.shape
-    #             size = (width, height)
-    #             video_out = cv2.VideoWriter(output + ".txt.mp4", fourcc, new_fps, size, isColor=False)
-    #         video_out.write(converted)
-    #     print ("Analyzing frames:", str(frames_count), "/", str(total_frames), "." * 10, "Frames included:", str(frames_included), end="\r")
-    # print ("")
-    # video_out.release()
 
     print("=" * 30)
     print ("SUMMARY:")
@@ -226,7 +168,6 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
 if __name__ == "__main__":
     """You can also call this file with arguments
     """
-    # convert_video_from_path_and_save("./videos/cat.mp4", "./output/cat", frame_frequency=1, image_reducer=10)
     try:
         start_time = time.time()
         args = sys.argv[1:]
