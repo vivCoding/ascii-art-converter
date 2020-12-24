@@ -30,7 +30,6 @@ def save_frames(start, end, video, batch_folder, frame_frequency, process_id=1):
             frames_included += 1
             filename = batch_folder + str(frames_included) + ".jpg"
             write_thread = threading.Thread(target=cv2.imwrite, args=(filename, frame))
-            # write_thread = threading.Thread(target=imageio.imwrite, args=(filename, frame))
             write_thread.start()
             threads.append(write_thread)
         print ("Saved frames:", frames_included, "/", total_frames, end="\r")
@@ -140,33 +139,24 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
         p.close()
         p.join()
 
+    # video settings
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    # set this none, as we don't know the final size of our images
-    video_out = None
-    # video_out = imageio.get_writer(output + ".txt.mp4", fps=new_fps, quality=None, bitrate=(bitrate * 1024))
     video_out = imageio.get_writer(output + ".txt.mp4", fps=new_fps, quality=None, bitrate=(bitrate * 1024 * 2.5))
+    size = None
 
     print ("Writing to video...")
     for batch in range(1, batches + 1):
         batch_folder = temp_folder + str(batch - 1) + "/"
         for i in range(1, frames_per_batch + 1):
-            # img = cv2.imread(batch_folder + str(i) + ".txt.jpg", 2)
             img = cv2.imread(batch_folder + str(i) + ".txt.jpg", 2)
-            # img = imageio.imread(batch_folder + str(i) + ".txt.jpg")
-            # if video_out is None:
-            #     height, width = img.shape
-            #     size = (width, height)
-            #     video_out = cv2.VideoWriter(output + ".txt.mp4", fourcc, new_fps, size, isColor=False)
-            #     # video_out = cv2.VideoWriter(output + ".txt.mp4", cv2.CAP_GSTREAMER, fourcc, new_fps, size, isColor=False)
-            # video_out = imageio.get_writer(output + ".txt.mp4", fps=new_fps)
-                # video_out = imageio.get_writer(output + ".txt.mp4", fps=new_fps, quality=None, bitrate=bitrate * 1024 * 1.5)
-            # video_out.write(img)
+            if size is None:
+                height, width = img.shape   
+                size = (width, height)
             video_out.append_data(img)
             print ("- Batch", batch, "/", batches, ", frames:", i, "/", frames_per_batch, end="\r")
         print("- Finished writing batch", batch, "/", batches, "at", str(time.time() - start_time))
-    shutil.rmtree(temp_folder)
-    # video_out.release()
     video_out.close()
+    shutil.rmtree(temp_folder)
 
     print("=" * 30)
     print ("SUMMARY:")
@@ -175,7 +165,7 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
     print ("Frames included and converted:", str(frames_per_batch * batches))
     print ("Original FPS:", str(fps))
     print("New FPS:", str(new_fps))
-    # print ("Resolution:", str(size))
+    print ("Resolution:", str(size))
     print ("Saved to " + output + ".txt.mp4")
 
 if __name__ == "__main__":
