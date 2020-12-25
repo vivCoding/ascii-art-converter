@@ -7,42 +7,70 @@
 </head>
 <body>
     <nav>
-        <a href = "#main"><u>Convert</u></a>
-        <a href = "#about"><u>About</u></a>
+        <a href = "#convert"><u>Convert</u></a>
         <a href = "#download"><u>Download</u></a>
+        <a href = "#about"><u>About</u></a>
         <a href = "#support"><u>Support</u></a>
     </nav>
     <div id = "content">
         <div id = "main">
-            <h1>Convert Media into ASCII Art</h1>
-            <p>Sounds pretty cool, right? Give it a shot!</p>
-            <div id = "uploadForm">
-                <label>Upload a file: </label><input name = "fileUpload" id = "fileUpload" type ="file"/>
-                <p><a href="#supportedFiles">View supported files</a></p>
+            <div id = "titleSection">
+                <h1>Media to ASCII Art Converter</h1>
+                <p>I mean, the name says it all.</p>
+                <!-- <p>. . .</p> -->
+                <p>Add that "text-ure" to that photo or video! Give it some "character"!</p>
+                <p>Don't believe in my puns? See it for yourself!</p>
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/os_NGwvW3xA" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <p>Looks pretty cool, right? <a href = "#convert"><u>Give it a shot!</u></a></p>
             </div>
         </div>
         <div id = "secondary">
-            <div id = "about" class = "section">
-                <h2>What is it?</h2>
-                <p>I mean, the name says it all.</p>
-                <p>Convert your regular ol' JPEG or PNG images to some neat lookin' images filled with text.<br>
-                    Heck, you can even convert full blown MP4 videos if you want. Just check it out!</p>
-                <iframe width="560" height="315" src="https://www.youtube.com/embed/os_NGwvW3xA" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                <h3 id = "supportedFiles">Supported files</h3>
-                <p>jpeg, png, mp4</p>
+            <div id = "convert" class = "section">
+                <h1>Converter Online</h1>
+                <label><strong>Upload a file: </strong></label><input name = "fileUpload" id = "fileUpload" type ="file">
+                <p><strong>Supported files:</strong> jpeg, png, mp4</p>
+                <div id = "options">
+                    <h3 id = "optionsTitle">Options</h3>
+                    <p id = "hoverToView">Hover over one to view description</p>
+                    <div id = "conversionOptions">
+                        <div class = "optionType"><label>Image reduction: </label><input name = "imageReduction" id = "imageReduction" type = "number" size = "2"/></div>
+                        <div class = "optionType"><label>Max Width: </label><input name = "maxWidth" id = "maxWidth" type = "number" size = "2"/></div>
+                        <div class = "optionType"><label>Max Height: </label><input name = "maxHeight" id = "maxHeight" type = "number" size = "2"/></div>
+                        <div class = "optionType"><label>Font Size: </label><input name = "fontSize" id = "fontSize" type = "number" size = "2" value = "10"/></div>
+                        <div class = "optionType"><label>Spacing: </label><input name = "spacing" id = "spacing" type = "number" size = "2" value = "1.1"/></div>
+                        <div class = "optionType"><label>Characters: </label><input name = "characters" id = "characters" type = "text" size = "7" value = " .*:+%S0#@"/></div>
+                        <div class = "optionType" class = "videoOption"><label>Frame frequency: </label><input type = "number" size = "2" value = "24"/></div>
+                    </div>
+                    <div>
+                        <button>Reset to Defaults</button>
+                        <button>Convert!</button>
+                    </div>
+                </div>
             </div>
             <br>
             <div id = "download" class = "section">
-                <h2>Download</h2>
+                <h1>Download</h1>
                 <p>The online version does have its limits.<br>Wanna have the ability to convert to ASCII anytime? Now you can!</p>
                 <a href = "">Windows</a>
                 <a href = "">Linux</a>
                 <a href = "">Python code</a>
+                <p></p>
+            </div>
+            <br>
+            <div id = "about" class = "section">
+                <h1>About</h1>
+                <p>
+                    This project started off as a fun little script-wrote-up-in-one-hour. Then I decided to try and convert some big 60 FPS videos. Then I decided to make it a full-blown full-stack service.
+                </p>
+                <p>Ho boy, projects can get big quick!</p>
+                <p>
+                    Regardless, this was all just for funsies and coding experimentation. I honestly don't care how many people use it, it'll just be here until the Internet decides to die.
+                </p>
             </div>
             <br>
             <div id = "support" class = "section">
-                <h2>Support</h2>
-                <p>All of this <del>poorly written</del> code is publicly available under MIT license.<br>You are more than welcome to contribute and help improve it.</p>
+                <h1>Support</h1>
+                <p>All of the <span class = "strikethrough">poorly written</span> code is publicly available under MIT license.<br>You are more than welcome to contribute and help improve it.</p>
                 <a href = "https://github.com/vvvuPurdue/ascii_art_converter" target="_blank" rel="noopener noreferrer">GitHub</a>
             </div>
             <br>
@@ -52,4 +80,6 @@
         <p>Website and program created by ViV</p>
     </footer>
 </body>
+<script src = "static/jquery.js"></script>
+<script src = "static/main.js"></script>
 </html>
