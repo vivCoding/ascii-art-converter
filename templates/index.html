@@ -1,0 +1,55 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel = "stylesheet" href = "static/style.css">
+    <title>ASCII Art Converter</title>
+</head>
+<body>
+    <nav>
+        <a href = "#main"><u>Convert</u></a>
+        <a href = "#about"><u>About</u></a>
+        <a href = "#download"><u>Download</u></a>
+        <a href = "#support"><u>Support</u></a>
+    </nav>
+    <div id = "content">
+        <div id = "main">
+            <h1>Convert Media into ASCII Art</h1>
+            <p>Sounds pretty cool, right? Give it a shot!</p>
+            <div id = "uploadForm">
+                <label>Upload a file: </label><input name = "fileUpload" id = "fileUpload" type ="file"/>
+                <p><a href="#supportedFiles">View supported files</a></p>
+            </div>
+        </div>
+        <div id = "secondary">
+            <div id = "about" class = "section">
+                <h2>What is it?</h2>
+                <p>I mean, the name says it all.</p>
+                <p>Convert your regular ol' JPEG or PNG images to some neat lookin' images filled with text.<br>
+                    Heck, you can even convert full blown MP4 videos if you want. Just check it out!</p>
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/os_NGwvW3xA" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <h3 id = "supportedFiles">Supported files</h3>
+                <p>jpeg, png, mp4</p>
+            </div>
+            <br>
+            <div id = "download" class = "section">
+                <h2>Download</h2>
+                <p>The online version does have its limits.<br>Wanna have the ability to convert to ASCII anytime? Now you can!</p>
+                <a href = "">Windows</a>
+                <a href = "">Linux</a>
+                <a href = "">Python code</a>
+            </div>
+            <br>
+            <div id = "support" class = "section">
+                <h2>Support</h2>
+                <p>All of this <del>poorly written</del> code is publicly available under MIT license.<br>You are more than welcome to contribute and help improve it.</p>
+                <a href = "https://github.com/vvvuPurdue/ascii_art_converter" target="_blank" rel="noopener noreferrer">GitHub</a>
+            </div>
+            <br>
+        </div>
+    </div>
+    <footer>
+        <p>Website and program created by ViV</p>
+    </footer>
+</body>
+</html>
