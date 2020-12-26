@@ -6,3 +6,6 @@ $("a").each((i, a) => {
     })
 });
 
+$("#convertButton, #resetButton").click(() => {
+    alert("Sorry, service is temporarily unavailable at the time. Please try again later!");
+});

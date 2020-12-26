@@ -6,7 +6,7 @@ import threading
 import multiprocessing
 import time
 
-def convert_image(img, reducer=100, fontSize=10, spacing=1.1, maxsize=None, keepTxt=False, output_txt_file="output", logs=False):
+def convert_image(img, reducer=100, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@", logs=False):
     """Converts a cv2 image object into ASCII art
 
     Parameters
@@ -48,7 +48,6 @@ def convert_image(img, reducer=100, fontSize=10, spacing=1.1, maxsize=None, keep
         # set up txt file to write to
         if keepTxt : write_file = open(output_txt_file + ".txt", "w")
 
-        chars = " .*:+%S0#@"
         # defines the subsets of pixel intensities
         # Can vary depending on max pixel intensity or length of char set
         div = np.amax(img) / (len(chars) - 1)

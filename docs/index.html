@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel = "stylesheet" href = "static/style.css">
+    <link rel = "stylesheet" href = "style.css">
     <title>ASCII Art Converter</title>
 </head>
 <body>
@@ -33,17 +33,38 @@
                     <h3 id = "optionsTitle">Options</h3>
                     <p id = "hoverToView">Hover over one to view description</p>
                     <div id = "conversionOptions">
-                        <div class = "optionType"><label>Image reduction: </label><input name = "imageReduction" id = "imageReduction" type = "number" size = "2"/></div>
-                        <div class = "optionType"><label>Max Width: </label><input name = "maxWidth" id = "maxWidth" type = "number" size = "2"/></div>
-                        <div class = "optionType"><label>Max Height: </label><input name = "maxHeight" id = "maxHeight" type = "number" size = "2"/></div>
-                        <div class = "optionType"><label>Font Size: </label><input name = "fontSize" id = "fontSize" type = "number" size = "2" value = "10"/></div>
-                        <div class = "optionType"><label>Spacing: </label><input name = "spacing" id = "spacing" type = "number" size = "2" value = "1.1"/></div>
-                        <div class = "optionType"><label>Characters: </label><input name = "characters" id = "characters" type = "text" size = "7" value = " .*:+%S0#@"/></div>
-                        <div class = "optionType" class = "videoOption"><label>Frame frequency: </label><input type = "number" size = "2" value = "24"/></div>
+                        <div class = "optionType">
+                            <label title = "Percentage (0 - 100) of how many pixels will be converted to text. The higher the value, the higher the final image size. Highly recommended to reduce this value for performance">Image to Text: </label>
+                            <input name = "imageReduction" id = "imageReduction" type = "number" size = "2" value = "100"/>
+                        </div>
+                        <div class = "optionType">
+                            <label title = "Max width of the final image. If width is filled out, must fill out height. Keep blank for no preference">Max Width: </label>
+                            <input name = "maxWidth" id = "maxWidth" type = "number" size = "2"/>
+                        </div>
+                        <div class = "optionType">
+                            <label title = "Max height of the final image. If height is filled out, must fill out width. Keep blank for no preference">Max Height: </label>
+                            <input name = "maxHeight" id = "maxHeight" type = "number" size = "2"/>
+                        </div>
+                        <div class = "optionType">
+                            <label title = "Font size for the characters. The higher the font size, the higher the final image size">Font Size: </label>
+                            <input name = "fontSize" id = "fontSize" type = "number" size = "2" value = "10"/>
+                        </div>
+                        <div class = "optionType">
+                            <label title = "Line spacing between each character. The higher the spacing, the higher the final image size">Spacing: </label>
+                            <input name = "spacing" id = "spacing" type = "number" size = "2" value = "1.1"/>
+                        </div>
+                        <div class = "optionType">
+                            <label title = "Characters to use to convert the image pixel intensities. From left to right, lower intensity to higher intensity">Characters: </label>
+                            <input name = "characters" id = "characters" type = "text" size = "7" value = " .*:+%S0#@"/>
+                        </div>
+                        <div class = "optionType" class = "videoOption">
+                            <label>Frame frequency: </label>
+                            <input type = "number" size = "2" value = "24"/>
+                        </div>
                     </div>
                     <div>
-                        <button>Reset to Defaults</button>
-                        <button>Convert!</button>
+                        <button id = "resetButton">Reset to Defaults</button>
+                        <button id = "convertButton">Convert!</button>
                     </div>
                 </div>
             </div>
@@ -60,7 +81,7 @@
             <div id = "about" class = "section">
                 <h1>About</h1>
                 <p>
-                    This project started off as a fun little script-wrote-up-in-one-hour. Then I decided to try and convert some big 60 FPS videos. Then I decided to make it a full-blown full-stack service.
+                    This project started off as a fun little script I wrote up in an hour. Then I decided to try and convert some big 60 FPS videos. Then I decided to make it a full-blown full-stack service.
                 </p>
                 <p>Ho boy, projects can get big quick!</p>
                 <p>
@@ -80,6 +101,6 @@
         <p>Website and program created by ViV</p>
     </footer>
 </body>
-<script src = "static/jquery.js"></script>
-<script src = "static/main.js"></script>
+<script src = "jquery.js"></script>
+<script src = "main.js"></script>
 </html>
