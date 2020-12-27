@@ -49,7 +49,7 @@ $("#convertButton").click(() => {
     finishedMessage.hide();
     console.log("Converting...")
 
-    fetch("http://localhost:5000/api/convertimage", {
+    fetch("http://0.0.0.0:5000/api/convert", {
         method: "POST",
         body: formData
     }).then(response => {
@@ -57,7 +57,7 @@ $("#convertButton").click(() => {
     }).then(file => {
         progress.hide();
         finishedMessage.show();
-        downloadLink.download = "converted.txt.jpg";
+        // downloadLink.attr("download", fileUpload[0].files[0].name + ".txt.jpg");
         downloadLink.attr("href", window.URL.createObjectURL(file));
         allInputs.prop("disabled", false);
         console.log("Success")

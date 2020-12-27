@@ -87,11 +87,24 @@ nav a:hover {
     margin-bottom: 0;
 }
 
+#convert #fileUpload button, #formButtons button {
+    font-size: large;
+    font-family: monospace;
+    background-color: white;
+    border: 0.2em black solid;
+    padding: 0.5em 1em;
+    border-radius: 0.5em;
+}
+
+#convert #fileUpload button, #formButtons button:hover {
+    background-color: black;
+    color: white;
+}
+
 #convert #hoverToView {
     font-size: 80%;
     margin: 0;
 }
-
 
 #options {
     /* visibility: hidden; */
@@ -125,20 +138,6 @@ nav a:hover {
     color: black;
     max-width: 65vw;
     padding: 1em 4em;
-}
-
-#convert #formButtons button {
-    font-size: large;
-    font-family: monospace;
-    background-color: white;
-    border: 0.2em black solid;
-    padding: 0.5em 1em;
-    border-radius: 0.5em;
-}
-
-#convert #formButtons button:hover {
-    background-color: black;
-    color: white;
 }
 
 #status p {

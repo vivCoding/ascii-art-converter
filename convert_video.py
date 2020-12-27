@@ -38,18 +38,18 @@ def save_frames(start, end, video, batch_folder, frame_frequency, process_id=1, 
     capture.release()
     if logs: print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
 
-def convert_batch(batch_folder, frames_per_batch, image_reducer, fontSize, spacing, maxsize, process_id, logs=False):
+def convert_batch(batch_folder, frames_per_batch, image_reducer, fontSize, spacing, maxsize, chars, process_id, logs=False):
     # take every frame in batch folder and convert them
     process_start = time.process_time()
     if logs : print ("- Process", process_id, "started at", process_start, frames_per_batch)
     for i in range(1, frames_per_batch + 1):
         filename =  batch_folder + str(i)
-        convert_image_from_path_and_save(filename + ".jpg", filename, reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, logs=False)
+        convert_image_from_path_and_save(filename + ".jpg", filename, reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, chars=chars, logs=False)
         if logs : print ("Converted frames", i, "/", frames_per_batch, end="\r")
     if logs : print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
 
 
-def convert_video_from_path_and_save(video, output="output", frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1, maxsize=None, logs=False):
+def convert_video_from_path_and_save(video, output="output", temp_folder = "./temp_convert_video/", frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@", logs=False):
     """Converts video from given path to ASCII art and saves it to disk as .txt.mp4 format
 
     Parameters
@@ -58,6 +58,8 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
         path to video to convert
     output : str
         path to output converted video
+    temp_folder : str
+        folder to use to temporarily store converted images
     frame_frequency : int
         determines how many frames to skip before capturing/converting.
         Keep at 1 if you want to retain all frames
@@ -66,6 +68,10 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
     all other parameters can be found in convert_image
     """
 
+    if logs:
+        start_time = time.time()
+        print ("Starting!")
+    
     capture = cv2.VideoCapture(video)
     if not capture.isOpened():
         print ("Could not read video. Please enter a valid video file!")
@@ -89,7 +95,7 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
     # initial setup
     batches = multiprocessing.cpu_count()
     frames_per_batch = int(total_frames / batches / frame_frequency)
-    temp_folder = "./temp_convert_video/"
+    
     try:
         os.mkdir(temp_folder)
     except FileExistsError:
@@ -130,6 +136,7 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
             fontSize,
             spacing,
             maxsize,
+            chars,
             batch,
             logs
         )
@@ -151,7 +158,7 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
         for i in range(1, frames_per_batch + 1):
             img = cv2.imread(batch_folder + str(i) + ".txt.jpg", 2)
             if size is None:
-                height, width = img.shape   
+                height, width = img.shape
                 size = (width, height)
             video_out.append_data(img)
             if logs : print ("- Batch", batch, "/", batches, ", frames:", i, "/", frames_per_batch, end="\r")
@@ -169,19 +176,18 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
         print("New FPS:", str(new_fps))
         print ("Resolution:", str(size))
         print ("Saved to " + output + ".txt.mp4")
+        print ("Time took:", str(time.time() - start_time), "secs")
 
 if __name__ == "__main__":
     """You can also call this file with arguments
     """
     try:
-        start_time = time.time()
         args = sys.argv[1:]
         video = args[0]
         output = args[1]
         frame_frequency = np.int_(args[2])
         image_reducer = np.int_(args[3])
         convert_video_from_path_and_save(video, output, frame_frequency=frame_frequency, image_reducer=image_reducer, logs=True)
-        print ("Time took:", str(time.time() - start_time), "secs")
     except IndexError:
         print ("Invalid parameters. Make sure you have all parameters!")
         print ("video output frame_frequency image_reducer")
