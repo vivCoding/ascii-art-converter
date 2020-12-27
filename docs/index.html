@@ -20,14 +20,16 @@
                 <!-- <p>. . .</p> -->
                 <p>Add that "text-ure" to that photo or video! Give it some "character"!</p>
                 <p>Don't believe in my puns? See it for yourself!</p>
-                <iframe width="560" height="315" src="https://www.youtube.com/embed/os_NGwvW3xA" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                <p>Looks pretty cool, right? <a href = "#convert"><u>Give it a shot!</u></a></p>
+                <iframe width="500" height="300" src="https://www.youtube.com/embed/os_NGwvW3xA" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <p>Looks pretty cool, right?</p>
+                <a href = "#convert"><u>Give it a shot!</u></a>
             </div>
         </div>
         <div id = "secondary">
+            <!-- <form id = "convert" class = "section" enctype="multipart/form-data" method="POST" action="http://localhost:5000/api/convertimage"> -->
             <div id = "convert" class = "section">
                 <h1>Converter Online</h1>
-                <label><strong>Upload a file: </strong></label><input name = "fileUpload" id = "fileUpload" type ="file">
+                <label><strong>Upload a file: </strong></label><input name = "fileUpload" id = "fileUpload" type ="file" accept="image">
                 <p><strong>Supported files:</strong> jpeg, png, mp4</p>
                 <div id = "options">
                     <h3 id = "optionsTitle">Options</h3>
@@ -35,7 +37,7 @@
                     <div id = "conversionOptions">
                         <div class = "optionType">
                             <label title = "Percentage (0 - 100) of how many pixels will be converted to text. The higher the value, the higher the final image size. Highly recommended to reduce this value for performance">Image to Text: </label>
-                            <input name = "imageReduction" id = "imageReduction" type = "number" size = "2" value = "100"/>
+                            <input name = "imageReduction" id = "imageReduction" type = "number" size = "2" value = "100" min = "0" max = "100"/>
                         </div>
                         <div class = "optionType">
                             <label title = "Max width of the final image. If width is filled out, must fill out height. Keep blank for no preference">Max Width: </label>
@@ -47,25 +49,30 @@
                         </div>
                         <div class = "optionType">
                             <label title = "Font size for the characters. The higher the font size, the higher the final image size">Font Size: </label>
-                            <input name = "fontSize" id = "fontSize" type = "number" size = "2" value = "10"/>
+                            <input name = "fontSize" id = "fontSize" type = "number" size = "2" value = "10" min = "1"/>
                         </div>
                         <div class = "optionType">
                             <label title = "Line spacing between each character. The higher the spacing, the higher the final image size">Spacing: </label>
-                            <input name = "spacing" id = "spacing" type = "number" size = "2" value = "1.1"/>
+                            <input name = "spacing" id = "spacing" type = "number" size = "2" value = "1.1" step = "0.01" min = "0"/>
                         </div>
                         <div class = "optionType">
                             <label title = "Characters to use to convert the image pixel intensities. From left to right, lower intensity to higher intensity">Characters: </label>
                             <input name = "characters" id = "characters" type = "text" size = "7" value = " .*:+%S0#@"/>
                         </div>
                         <div class = "optionType" class = "videoOption">
-                            <label>Frame frequency: </label>
-                            <input type = "number" size = "2" value = "24"/>
+                            <label title = "VIDEO ONLY. How often to skip frames. Keep 1 to preserver all frames and have the same frames-per-second">Frame frequency: </label>
+                            <input name = "frameFrequency" id = "frameFrequency" type = "number" size = "2" value = "24" min = "0"/>
                         </div>
                     </div>
-                    <div>
-                        <button id = "resetButton">Reset to Defaults</button>
-                        <button id = "convertButton">Convert!</button>
-                    </div>
+                </div>
+                <div id = "formButtons">
+                    <button type = "button" id = "resetButton">Reset to Defaults</button>
+                    <button type = "submit" id = "convertButton">Convert</button>
+                </div>
+                <div id = "status">
+                    <p id = "progress">Converting...</p>
+                    <p id = "error">Uh oh, something went wrong! Try again later maybe?</p>
+                    <p id = "finished">Finished! <a href = "" id = "downloadLink" target="_blank" rel="noopener noreferrer">Download</a></p>
                 </div>
             </div>
             <br>

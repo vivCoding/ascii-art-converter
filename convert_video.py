@@ -10,7 +10,7 @@ import multiprocessing
 import threading
 import imageio
 
-def save_frames(start, end, video, batch_folder, frame_frequency, process_id=1):
+def save_frames(start, end, video, batch_folder, frame_frequency, process_id=1, logs=False):
     # we open a separate and independent capture for each process
     capture = cv2.VideoCapture(video)
     capture.set(cv2.CAP_PROP_POS_FRAMES, start)
@@ -20,7 +20,7 @@ def save_frames(start, end, video, batch_folder, frame_frequency, process_id=1):
     # we utitlize multithreading for writing to disk
     threads = []
     process_start = time.process_time()
-    print ("- Process", process_id, "started at", process_start)
+    if logs : print ("- Process", process_id, "started at", process_start)
     for i in range(total_frames):
         ret, frame = capture.read()
         if ret is False:
@@ -32,24 +32,24 @@ def save_frames(start, end, video, batch_folder, frame_frequency, process_id=1):
             write_thread = threading.Thread(target=cv2.imwrite, args=(filename, frame))
             write_thread.start()
             threads.append(write_thread)
-        print ("Saved frames:", frames_included, "/", total_frames, end="\r")
+        if logs : print ("Saved frames:", frames_included, "/", total_frames, end="\r")
     for t in threads:
         t.join()
     capture.release()
-    print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
+    if logs: print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
 
-def convert_batch(batch_folder, frames_per_batch, image_reducer, fontSize, spacing, maxsize, process_id):
+def convert_batch(batch_folder, frames_per_batch, image_reducer, fontSize, spacing, maxsize, process_id, logs=False):
     # take every frame in batch folder and convert them
     process_start = time.process_time()
-    print ("- Process", process_id, "started at", process_start, frames_per_batch)
+    if logs : print ("- Process", process_id, "started at", process_start, frames_per_batch)
     for i in range(1, frames_per_batch + 1):
         filename =  batch_folder + str(i)
         convert_image_from_path_and_save(filename + ".jpg", filename, reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, logs=False)
-        print ("Converted frames", i, "/", frames_per_batch, end="\r")
-    print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
+        if logs : print ("Converted frames", i, "/", frames_per_batch, end="\r")
+    if logs : print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
 
 
-def convert_video_from_path_and_save(video, output="output", frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1, maxsize=None):
+def convert_video_from_path_and_save(video, output="output", frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1, maxsize=None, logs=False):
     """Converts video from given path to ASCII art and saves it to disk as .txt.mp4 format
 
     Parameters
@@ -73,7 +73,6 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
     
     fps = capture.get(cv2.CAP_PROP_FPS)
     bitrate = int(capture.get(cv2.CAP_PROP_BITRATE))
-    print (bitrate)
     total_frames = np.int_(capture.get(cv2.CAP_PROP_FRAME_COUNT))
     frames_included = int(total_frames / frame_frequency)
     # total_frames / fps gives us our video duration.
@@ -110,10 +109,11 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
             video,
             batch_folder,
             frame_frequency,
-            batch
+            batch,
+            logs
         )
         all_args.append(args)
-    print("Getting frames...")
+    if logs : print("Getting frames...")
     with multiprocessing.Pool(batches) as p:
         p.starmap(save_frames, all_args)
         p.close()
@@ -130,10 +130,11 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
             fontSize,
             spacing,
             maxsize,
-            batch
+            batch,
+            logs
         )
         all_args.append(args)
-    print("Converting frames...")
+    if logs : print("Converting frames...")
     with multiprocessing.Pool(batches) as p:
         p.starmap(convert_batch, all_args)
         p.close()
@@ -144,7 +145,7 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
     video_out = imageio.get_writer(output + ".txt.mp4", fps=new_fps, quality=None, bitrate=(bitrate * 1024 * 2.5))
     size = None
 
-    print ("Writing to video...")
+    if logs : print ("Writing to video...")
     for batch in range(1, batches + 1):
         batch_folder = temp_folder + str(batch - 1) + "/"
         for i in range(1, frames_per_batch + 1):
@@ -153,20 +154,21 @@ def convert_video_from_path_and_save(video, output="output", frame_frequency=24,
                 height, width = img.shape   
                 size = (width, height)
             video_out.append_data(img)
-            print ("- Batch", batch, "/", batches, ", frames:", i, "/", frames_per_batch, end="\r")
-        print("- Finished writing batch", batch, "/", batches, "at", str(time.time() - start_time))
+            if logs : print ("- Batch", batch, "/", batches, ", frames:", i, "/", frames_per_batch, end="\r")
+        if logs : print("- Finished writing batch", batch, "/", batches, "at", str(time.time() - start_time))
     video_out.close()
     shutil.rmtree(temp_folder)
 
-    print("=" * 30)
-    print ("SUMMARY:")
-    print ("-" * 20)
-    print ("Total frames:", str(total_frames))
-    print ("Frames included and converted:", str(frames_per_batch * batches))
-    print ("Original FPS:", str(fps))
-    print("New FPS:", str(new_fps))
-    print ("Resolution:", str(size))
-    print ("Saved to " + output + ".txt.mp4")
+    if logs:
+        print("=" * 30)
+        print ("SUMMARY:")
+        print ("-" * 20)
+        print ("Total frames:", str(total_frames))
+        print ("Frames included and converted:", str(frames_per_batch * batches))
+        print ("Original FPS:", str(fps))
+        print("New FPS:", str(new_fps))
+        print ("Resolution:", str(size))
+        print ("Saved to " + output + ".txt.mp4")
 
 if __name__ == "__main__":
     """You can also call this file with arguments
@@ -178,7 +180,7 @@ if __name__ == "__main__":
         output = args[1]
         frame_frequency = np.int_(args[2])
         image_reducer = np.int_(args[3])
-        convert_video_from_path_and_save(video, output, frame_frequency=frame_frequency, image_reducer=image_reducer)
+        convert_video_from_path_and_save(video, output, frame_frequency=frame_frequency, image_reducer=image_reducer, logs=True)
         print ("Time took:", str(time.time() - start_time), "secs")
     except IndexError:
         print ("Invalid parameters. Make sure you have all parameters!")

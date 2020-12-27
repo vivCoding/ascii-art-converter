@@ -45,9 +45,6 @@ def convert_image(img, reducer=100, fontSize=10, spacing=1.1, maxsize=None, char
         # load ttf font
         font = ImageFont.truetype("NotoMono-Regular.ttf", fontSize, encoding="unic")
 
-        # set up txt file to write to
-        if keepTxt : write_file = open(output_txt_file + ".txt", "w")
-
         # defines the subsets of pixel intensities
         # Can vary depending on max pixel intensity or length of char set
         div = np.amax(img) / (len(chars) - 1)
@@ -102,8 +99,6 @@ def convert_image(img, reducer=100, fontSize=10, spacing=1.1, maxsize=None, char
                     currentCol = col[0]
                     val = col[1]
                     draw.text((currentCol, currentRow), val, 255, font=font)
-                    if keepTxt : write_file(val + " ")
-                if keepTxt : write_file("\n")
                 if logs : print ("- Batch", r, "/", batches, ", converted rows", row, "/", len(result), end="\r")
             if logs : print ("")
 
@@ -115,10 +110,6 @@ def convert_image(img, reducer=100, fontSize=10, spacing=1.1, maxsize=None, char
             maxsize = (1920, 1080)
             output_img.thumbnail(maxsize, Image.NEAREST)
 
-        if keepTxt:
-            if logs : print ("Saving txt file to", output_txt_file + ".txt")
-            write_file.close()
-
         return output_img
     except Exception as e:
         print ("")
@@ -126,7 +117,7 @@ def convert_image(img, reducer=100, fontSize=10, spacing=1.1, maxsize=None, char
         exit(0)
 
 
-def convert_image_from_path_and_save(image_path, output_file="output", reducer=100, fontSize=10, spacing=1.1, maxsize=None, keepTxt=False, logs=True):
+def convert_image_from_path_and_save(image_path, output_file="output", reducer=100, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@", logs=False):
     """Converts a cv2 image from a given path into ASCII art and saves it to disk
 
     Parameters
@@ -141,7 +132,7 @@ def convert_image_from_path_and_save(image_path, output_file="output", reducer=1
     img = cv2.imread(image_path, 2)
     try:
         if img.size == 0 : print ("bad file")
-        output = convert_image(img, reducer=reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, keepTxt=keepTxt, output_txt_file=output_file, logs=logs)
+        output = convert_image(img, reducer=reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, chars=chars, logs=logs)
         if logs : print ("Saving image...")
         output.save(output_file + ".txt.jpg")
         if logs : print ("Saved to " + output_file + ".txt.jpg")
@@ -158,7 +149,7 @@ if __name__ == "__main__":
         image_file = args[0]
         output_file = args[1]
         reducer = int(args[2])
-        convert_image_from_path_and_save(image_file, output_file, reducer=reducer)
+        convert_image_from_path_and_save(image_file, output_file, reducer=reducer, logs=True)
         print ("Time took:", str(time.time() - start_time), "secs")
     except IndexError:
         print ("Invalid parameters. Make sure you have all parameters!")

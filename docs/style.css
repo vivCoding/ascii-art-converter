@@ -59,12 +59,15 @@ nav a:hover {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    padding: 2em;
+    padding-top: 0;
 }
 
 #main {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    flex-wrap: wrap;
     min-height: 95vh;
 }
 
@@ -89,19 +92,6 @@ nav a:hover {
     margin: 0;
 }
 
-#convert button {
-    font-size: large;
-    font-family: monospace;
-    background-color: white;
-    border: 0.2em black solid;
-    padding: 0.5em 1em;
-    border-radius: 0.5em;
-}
-
-#convert button:hover {
-    background-color: black;
-    color: white;
-}
 
 #options {
     /* visibility: hidden; */
@@ -135,6 +125,24 @@ nav a:hover {
     color: black;
     max-width: 65vw;
     padding: 1em 4em;
+}
+
+#convert #formButtons button {
+    font-size: large;
+    font-family: monospace;
+    background-color: white;
+    border: 0.2em black solid;
+    padding: 0.5em 1em;
+    border-radius: 0.5em;
+}
+
+#convert #formButtons button:hover {
+    background-color: black;
+    color: white;
+}
+
+#status p {
+    display: none;
 }
 
 iframe {
