@@ -27,6 +27,10 @@ let spacing = $("#spacing");
 let characters = $("#characters");
 let frameFrequency = $("#frameFrequency");
 
+let resetButton = $("#resetButton");
+let convertButton = $("#convertButton");
+let cancelButton = $("#cancelButton")
+
 let progress = $("#progress");
 let statusMessage = $("#statusMessage");
 let progressBar = $("#convertProgressBar");
@@ -36,8 +40,8 @@ let cancelMessage = $("#cancel");
 let previewLink = $("#previewLink");
 let downloadLink = $("#downloadLink");
 
-let conversionProgress = null;
-let currentJobId = ""
+let progressStream = null;
+let currentJobId = "";
 
 $(document).ready(function(e) {
     progress.hide();
@@ -46,7 +50,7 @@ $(document).ready(function(e) {
     finishedMessage.hide();
 });
 
-$("#resetButton").click(function(e) {
+resetButton.click(function(e) {
     imageReduction.val("10");
     maxWidth.val("");
     maxHeight.val("");
@@ -56,85 +60,100 @@ $("#resetButton").click(function(e) {
     frameFrequency.val("24");
 });
 
-$("#convertButton").click(function(e) {
-    let formData = new FormData();
-    formData.append("fileUpload", fileUpload[0].files[0]);
-    formData.append("imageReduction", imageReduction.val());
-    formData.append("maxWidth", maxWidth.val());
-    formData.append("maxHeight", maxHeight.val());
-    formData.append("fontSize", fontSize.val());
-    formData.append("spacing", spacing.val());
-    formData.append("characters", characters.val());
-    formData.append("frameFrequency", frameFrequency.val());
-    
-    showProgress();
-    console.log("Converting...")
+convertButton.click(function(e) {
+    let file = fileUpload[0].files[0];
+    if (file.size / 1000000 <= 8) {
+        let formData = new FormData();
+        formData.append("fileUpload", file);
+        formData.append("imageReduction", imageReduction.val());
+        formData.append("maxWidth", maxWidth.val());
+        formData.append("maxHeight", maxHeight.val());
+        formData.append("fontSize", fontSize.val());
+        formData.append("spacing", spacing.val());
+        formData.append("characters", characters.val());
+        formData.append("frameFrequency", frameFrequency.val());
+        
+        showProgress();
+        console.log("Converting...")
 
-    // conversionProgress = setInterval(checkProgress, 2000);
-
-    fetch("http://0.0.0.0:5000/api/convert", {
-        method: "POST",
-        body: formData
-    }).then(response => {
-        return response.json();
-    }).then(data => {
-        currentJobId = data;
-        convertProgress = setInterval(checkProgress, 1000);
-    }).catch(error => {
-        showError();
-        clearInterval(convertProgress);
-    })
+        fetch("http://0.0.0.0:5000/api/convert", {
+            method: "POST",
+            body: formData
+        }).then(response => {
+            return response.json();
+        }).then(data => {
+            checkProgress(data);
+            cancelButton.unbind("click");
+            cancelButton.click(function() {
+                cancelConversion(data);
+            });
+        }).catch(error => {
+            progressStream.close();
+            showError();
+            console.log(error);
+        })
+    } else {
+        alert("Holy guacomole, that file is a bit too large to handle online. We only accept files less than 8 MB. Consider downloading the software instead!");
+    }
 });
 
-function checkProgress() {
-    fetch("http://0.0.0.0:5000/api/getprogress", {
+function checkProgress(data) {
+    progressStream = new SSE("http://0.0.0.0:5000/api/getprogress", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify(currentJobId)
-    }).then(response => {
-        const contentType = response.headers.get("Content-Type");
-        if (contentType.includes("application/json")) {
-            response.json().then(data => {
-                let progress = Math.round(parseFloat(data) * 10) / 10;
-                statusMessage.text("Converting..." + progress + "%");
-                progressBar.css("width", data + "%")
-            })
-        } else {
-            response.blob().then((file) => {
-                clearInterval(convertProgress);
+        payload: JSON.stringify(data)
+    });
+    progressStream.onmessage = function(event) {
+        let progress = parseFloat(event.data).toFixed(2);
+        statusMessage.text("Converting..." + progress + "%");
+        progressBar.css("width", progress + "%");
+        if (progress == 100) {
+            progressStream.close();
+            fetch("http://0.0.0.0:5000/api/getoutput", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            }).then(response => {
+                return response.blob();
+            }).then(file => {
                 showFinished();
                 let url = window.URL.createObjectURL(file);
                 downloadLink.attr("download", fileUpload[0].files[0].name);
                 downloadLink.attr("href", url);
                 previewLink.attr("href", url);
-                console.log("Success")
+                console.log("Success");
+            }).catch(error => {
+                showError();
+                console.log("Error getting file");
             })
         }
-    }).catch(error => {
-        showError();
-        clearInterval(convertProgress);
-    })
+    }
+    progressStream.stream();
 }
 
-$("#cancelButton").click(function(e) {
+function cancelConversion(data) {
+    progressStream.close();
     cancelMessage.text("Cancelling...");
     showCanceled();
-    clearInterval(convertProgress);
     fetch("http://0.0.0.0:5000/api/cancel", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify(currentJobId)
+        body: JSON.stringify(data)
     }).then(response => {
+        console.log("Cancelled");
         cancelMessage.text("Conversion cancelled!");
         allInputs.prop("disabled", false);
     }).catch(error => {
         showError();
+        console.log(error);
     })
-});
+}
 
 function showProgress() {
     allInputs.prop("disabled", true);
