@@ -7,10 +7,10 @@
 </head>
 <body>
     <nav>
-        <a href = "#convert"><u>Convert</u></a>
-        <a href = "#download"><u>Download</u></a>
-        <a href = "#about"><u>About</u></a>
-        <a href = "#support"><u>Support</u></a>
+        <a class = "scrollToLink" href = "#convert"><u>Convert</u></a>
+        <a class = "scrollToLink" href = "#download"><u>Download</u></a>
+        <a class = "scrollToLink" href = "#about"><u>About</u></a>
+        <a class = "scrollToLink" href = "#support"><u>Support</u></a>
     </nav>
     <div id = "content">
         <div id = "main">
@@ -22,18 +22,27 @@
                 <p>Don't believe in my puns? See it for yourself!</p>
                 <iframe width="500" height="300" src="https://www.youtube.com/embed/os_NGwvW3xA" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 <p>Looks pretty cool, right?</p>
-                <a href = "#convert"><u>Give it a shot!</u></a>
+                <a class = "scrollToLink" href = "#convert"><u>Give it a shot!</u></a>
             </div>
         </div>
         <div id = "secondary">
-            <!-- <form id = "convert" class = "section" enctype="multipart/form-data" method="POST" action="http://localhost:5000/api/convertimage"> -->
             <div id = "convert" class = "section">
                 <h1>Converter Online</h1>
-                <label><strong>Upload a file: </strong></label><input name = "fileUpload" id = "fileUpload" type ="file" accept="image">
-                <p><strong>Supported files:</strong> jpeg, png, mp4</p>
+                <div id = "uploadForm">
+                    <label><strong>Upload a file: </strong></label>
+                    <input name = "fileUpload" id = "fileUpload" type ="file" accept="image/*, video/*">
+                </div>
+                <!-- <div id = "fileDetails">
+                    <h3>File details:</h3>
+                    <p class = "smallP">Size: 12MB</p>
+                    <p class = "smallP">Pixels: 2073600</p>
+                    <p class = "smallP">FPS: 24</p>
+                    <p class = "smallP">Total Frames: 707</p>
+                </div> -->
+                <p><a href = "http://0.0.0.0:5000/api/supportedfiles" target="_blank" rel="noopener noreferrer">View supported files</a></p>
                 <div id = "options">
-                    <h3 id = "optionsTitle">Options</h3>
-                    <p id = "hoverToView">Hover over one to view description</p>
+                    <h3>Options</h3>
+                    <p class = "smallP">Hover over one to view description</p>
                     <div id = "conversionOptions">
                         <div class = "optionType">
                             <label title = "Percentage (0 - 100) of how many pixels will be converted to text. The higher the value, the higher the final image size. Highly recommended to reduce this value below 100% for performance">Image to Text: </label>
@@ -70,9 +79,19 @@
                     <button type = "submit" id = "convertButton">Convert</button>
                 </div>
                 <div id = "status">
-                    <p id = "progress">Converting...</p>
+                    <div id = "progress">
+                        <p class = "smallP" id = "statusMessage">Converting...0%</p>
+                        <div class="progressBarContainer">
+                            <div class = "progressBar" id = "convertProgressBar"></div>
+                        </div>
+                        <button type = "button" id = "cancelButton">Cancel</button>
+                    </div>
                     <p id = "error">Uh oh, something went wrong! Try again later maybe?</p>
-                    <p id = "finished">Finished! <a href = "" id = "downloadLink" target="_blank" rel="noopener noreferrer">Download</a></p>
+                    <p id = "cancel">Conversion canceled!</p>
+                    <p id = "finished">Finished!
+                        <a href = "" id = "previewLink" target="_blank" rel="noopener noreferrer">Preview</a>
+                        <a href = "" id = "downloadLink" target="_blank" rel="noopener noreferrer">Download</a>
+                    </p>
                 </div>
             </div>
             <br>

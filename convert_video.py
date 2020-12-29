@@ -6,11 +6,11 @@ import os
 import time
 import shutil
 from convert_image import *
-import multiprocessing
+from multiprocessing import Process, Pool, Value
 import threading
 import imageio
 
-def save_frames(start, end, video, batch_folder, frame_frequency, process_id=1, logs=False):
+def save_frames(start, end, video, batch_folder, frame_frequency, progress_tracker, progress_step, process_id=1, logs=False):
     # we open a separate and independent capture for each process
     capture = cv2.VideoCapture(video)
     capture.set(cv2.CAP_PROP_POS_FRAMES, start)
@@ -20,7 +20,7 @@ def save_frames(start, end, video, batch_folder, frame_frequency, process_id=1, 
     # we utitlize multithreading for writing to disk
     threads = []
     process_start = time.process_time()
-    if logs : print ("- Process", process_id, "started at", process_start)
+    # if logs : print ("- Process", process_id, "started at", process_start)
     for i in range(total_frames):
         ret, frame = capture.read()
         if ret is False:
@@ -32,24 +32,34 @@ def save_frames(start, end, video, batch_folder, frame_frequency, process_id=1, 
             write_thread = threading.Thread(target=cv2.imwrite, args=(filename, frame))
             write_thread.start()
             threads.append(write_thread)
-        if logs : print ("Saved frames:", frames_included, "/", total_frames, end="\r")
+            with progress_tracker.get_lock():
+                progress_tracker.value += progress_step
+                if logs : print ("Progress:", progress_tracker.value, "%", end="\r")
+        # if logs : print ("Saved frames:", frames_included, "/", total_frames, end="\r")
     for t in threads:
         t.join()
     capture.release()
-    if logs: print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
+    # if logs: print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
 
-def convert_batch(batch_folder, frames_per_batch, image_reducer, fontSize, spacing, maxsize, chars, process_id, logs=False):
+def convert_batch(batch_folder, frames_per_batch,
+                image_reducer, fontSize, spacing, maxsize, chars,
+                progress_tracker, progress_step, process_id, logs=False):
     # take every frame in batch folder and convert them
     process_start = time.process_time()
-    if logs : print ("- Process", process_id, "started at", process_start, frames_per_batch)
+    # if logs : print ("- Process", process_id, "started at", process_start)
     for i in range(1, frames_per_batch + 1):
         filename =  batch_folder + str(i)
-        convert_image_from_path_and_save(filename + ".jpg", filename, reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, chars=chars, logs=False)
-        if logs : print ("Converted frames", i, "/", frames_per_batch, end="\r")
-    if logs : print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
+        convert_image_from_path_and_save(filename + ".jpg", filename, image_reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, chars=chars, logs=False)
+        # if logs : print ("Converted frames", i, "/", frames_per_batch, end="\r")
+        with progress_tracker.get_lock():
+            progress_tracker.value += progress_step
+            if logs : print ("Progress:", progress_tracker.value, "%", end="\r")
+    # if logs : print ("- Process", process_id, "finished at", str(time.process_time() - process_start), "secs")
 
 
-def convert_video_from_path_and_save(video, output="output", temp_folder = "./temp_convert_video/", frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@", logs=False):
+def convert_video_from_path_and_save(video, output="output", temp_folder = "./temp_convert_video/",
+                                    frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@",
+                                    logs=False, progress_tracker=None):
     """Converts video from given path to ASCII art and saves it to disk as .txt.mp4 format
 
     Parameters
@@ -71,7 +81,7 @@ def convert_video_from_path_and_save(video, output="output", temp_folder = "./te
     if logs:
         start_time = time.time()
         print ("Starting!")
-    
+
     capture = cv2.VideoCapture(video)
     if not capture.isOpened():
         print ("Could not read video. Please enter a valid video file!")
@@ -93,9 +103,15 @@ def convert_video_from_path_and_save(video, output="output", temp_folder = "./te
     # To utilize mutli processing, we separate grabbing frames and converting the frames into batches
 
     # initial setup
-    batches = multiprocessing.cpu_count()
+    # batches = multiprocessing.cpu_count()
+    batches = 3
     frames_per_batch = int(total_frames / batches / frame_frequency)
-    
+    # progress: saved frames + converted frames + written frames
+    # We will offset some tasks based on their performance intensity
+    if progress_tracker is None:
+        progress_tracker = Value("f", 0, lock=True)
+    progress_step = 100 / (frames_included * 3)
+
     try:
         os.mkdir(temp_folder)
     except FileExistsError:
@@ -104,7 +120,8 @@ def convert_video_from_path_and_save(video, output="output", temp_folder = "./te
         exit(0)
 
     # grab the frames, and write to separate batch folders
-    all_args = []
+    # if logs : print("Getting frames...")
+    save_frames_processes = []
     for batch in range(batches):
         starting_frame = batch * frames_per_batch * frame_frequency
         batch_folder = temp_folder + str(batch) + "/"
@@ -115,18 +132,21 @@ def convert_video_from_path_and_save(video, output="output", temp_folder = "./te
             video,
             batch_folder,
             frame_frequency,
+            progress_tracker,
+            progress_step,
             batch,
             logs
         )
-        all_args.append(args)
-    if logs : print("Getting frames...")
-    with multiprocessing.Pool(batches) as p:
-        p.starmap(save_frames, all_args)
-        p.close()
+        p = Process(target=save_frames, args=args)
+        p.daemon = True
+        p.start()
+        save_frames_processes.append(p)
+    for p in save_frames_processes:
         p.join()
 
     # convert all the frames in each batch folder
-    all_args = []
+    # if logs : print("Converting frames...")
+    convert_processes = []
     for batch in range(batches):
         batch_folder = temp_folder + str(batch) + "/"
         args = (
@@ -137,14 +157,16 @@ def convert_video_from_path_and_save(video, output="output", temp_folder = "./te
             spacing,
             maxsize,
             chars,
+            progress_tracker,
+            progress_step,
             batch,
             logs
         )
-        all_args.append(args)
-    if logs : print("Converting frames...")
-    with multiprocessing.Pool(batches) as p:
-        p.starmap(convert_batch, all_args)
-        p.close()
+        p = Process(target=convert_batch, args=args)
+        p.daemon = True
+        p.start()
+        convert_processes.append(p)
+    for p in convert_processes:
         p.join()
 
     # video settings
@@ -152,7 +174,7 @@ def convert_video_from_path_and_save(video, output="output", temp_folder = "./te
     video_out = imageio.get_writer(output + ".txt.mp4", fps=new_fps, quality=None, bitrate=(bitrate * 1024 * 2.5))
     size = None
 
-    if logs : print ("Writing to video...")
+    # if logs : print ("Writing to video...")
     for batch in range(1, batches + 1):
         batch_folder = temp_folder + str(batch - 1) + "/"
         for i in range(1, frames_per_batch + 1):
@@ -161,15 +183,26 @@ def convert_video_from_path_and_save(video, output="output", temp_folder = "./te
                 height, width = img.shape
                 size = (width, height)
             video_out.append_data(img)
-            if logs : print ("- Batch", batch, "/", batches, ", frames:", i, "/", frames_per_batch, end="\r")
-        if logs : print("- Finished writing batch", batch, "/", batches, "at", str(time.time() - start_time))
+            with progress_tracker.get_lock():
+                progress_tracker.value += progress_step
+                if logs : print ("Progress:", progress_tracker.value, "%", end="\r")
+            # if logs : print ("- Batch", batch, "/", batches, ", frames:", i, "/", frames_per_batch, end="\r")
+        # if logs : print("- Finished writing batch", batch, "/", batches, "at", str(time.time() - start_time))
     video_out.close()
     shutil.rmtree(temp_folder)
+
+    # when we are done, there might be some rounding errors when converting some stuff to integers, thus it doesn't appear to be done
+    # thus, we just set it 100
+    with progress_tracker.get_lock():
+        progress_tracker.value = 100
 
     if logs:
         print("=" * 30)
         print ("SUMMARY:")
         print ("-" * 20)
+        with progress_tracker.get_lock():
+            # progress_tracker.value = max_progress
+            print ("Progress:", progress_tracker.value, "%")
         print ("Total frames:", str(total_frames))
         print ("Frames included and converted:", str(frames_per_batch * batches))
         print ("Original FPS:", str(fps))
@@ -177,6 +210,38 @@ def convert_video_from_path_and_save(video, output="output", temp_folder = "./te
         print ("Resolution:", str(size))
         print ("Saved to " + output + ".txt.mp4")
         print ("Time took:", str(time.time() - start_time), "secs")
+
+class convert_video_process:
+    def __init__(self, video, output="output", temp_folder = "./temp_convert_video/",
+                frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1,
+                maxsize=None, chars=" .*:+%S0#@", logs=False):
+        self.progress = Value("f", 0, lock=True)
+        self.video = video
+        self.output = output + ".txt.mp4"
+        self.temp_folder = temp_folder
+        self.process = Process(target=convert_video_from_path_and_save, args=(
+            video, output, temp_folder,
+            frame_frequency, image_reducer, fontSize, spacing, maxsize, chars,
+            logs, self.progress
+        ))
+
+    def get_process(self):
+        return self.process
+    
+    def start_process(self):
+        self.process.start()
+
+    def terminate_process(self):
+        self.process.terminate()
+        self.process.join()
+        self.process.close()
+    
+    def cleanup_temp(self):
+        shutil.rmtree(self.temp_folder)
+
+    def get_progress(self):
+        with self.progress.get_lock():
+            return self.progress.value
 
 if __name__ == "__main__":
     """You can also call this file with arguments

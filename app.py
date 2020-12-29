@@ -1,15 +1,17 @@
-from flask import Flask, request, redirect, jsonify, send_file, send_from_directory
+from flask import Flask, request, redirect, jsonify, send_file, send_from_directory, Response
 from werkzeug.utils import secure_filename
 import os
 from flask_cors import CORS
-from convert_image import convert_image_from_path_and_save
-from convert_video import convert_video_from_path_and_save
+from convert_image import convert_image_process
+from convert_video import convert_video_process
 from uuid import uuid4
 
 app = Flask(__name__)
 app.config.from_object("config.Config")
 config = app.config
 cors = CORS(app)
+
+jobs = {}
 
 @app.route("/api/convert", methods=["POST"])
 def convert():
@@ -22,20 +24,21 @@ def convert():
     output_path = config["OUTPUT"] + file_id
 
     if file_ext in config["IMG_EXT"]:
-        convert_image_from_path_and_save(
+        p = convert_image_process(
             temp_path, output_path,
-            reducer = int(data["imageReduction"]),
+            image_reducer = int(data["imageReduction"]),
             fontSize = int(data["fontSize"]),
             spacing = float(data["spacing"]),
             maxsize = None if data["maxWidth"] == "" or data["maxHeight"] == "" else (int(data["maxWidth"]), int(data["maxHeight"])),
             chars = data["characters"],
             logs = True
         )
-        os.remove(temp_path)
-        return send_from_directory(config["OUTPUT"], file_id + ".txt.jpg", as_attachment=True, attachment_filename=filename + ".txt.jpg"), 200
+        p.start_process()
+        jobs[file_id] = p
+        return jsonify(file_id), 200
     elif file_ext in config["VID_EXT"]:
         temp_batch_folder = os.path.join(config["TEMP"], file_id + "/")
-        convert_video_from_path_and_save(
+        p = convert_video_process(
             temp_path, output_path,
             temp_folder=temp_batch_folder,
             frame_frequency=int(data["frameFrequency"]),
@@ -46,31 +49,50 @@ def convert():
             chars = data["characters"],
             logs = True
         )
-        os.remove(temp_path)
-        return send_from_directory(config["OUTPUT"], file_id + ".txt.mp4", as_attachment=True, attachment_filename=filename + ".txt.mp4"), 200
+        p.start_process()
+        jobs[file_id] = p
+        return jsonify(file_id), 200
     else:
         os.remove(temp_path)
         return jsonify("Bad format")
 
-def thing():
-    img = request.files["fileUpload"]
-    imgId = uuid4().hex
-    imgPath = os.path.join(app.config["TEMP"], secure_filename(imgId + "." + img.filename))
-    outputPath = app.config["OUTPUT"] + imgId + "." + img.filename
-    img.save(imgPath)
-    print ("=" * 50)
-    convert_image_from_path_and_save(
-        imgPath, outputPath,
-        reducer = int(data["imageReduction"]),
-        fontSize = int(data["fontSize"]),
-        spacing = float(data["spacing"]),
-        maxsize = None if data["maxWidth"] == "" or data["maxHeight"] == "" else (int(data["maxWidth"]), int(data["maxHeight"])),
-        chars = data["characters"],
-        logs = True
-    )
-    os.remove(imgPath)
-    return send_from_directory(app.config["OUTPUT"], imgId + "." + img.filename + ".txt.jpg", as_attachment=True), 200
-    # return jsonify("works"), 200
+
+@app.route("/api/getprogress", methods=["POST"])
+def get_progress():
+    job_id = request.get_json()
+    job = jobs[job_id]
+    progress = job.get_progress()
+    if progress < 100:
+        return jsonify(progress), 200
+    else:
+        done = jobs.pop(job_id, None)
+        job_type_ext = os.path.splitext(done.output)[1]
+        print (done.output)
+        os.remove(done.video if job_type_ext == ".mp4" else done.image_path)
+        print (job_id + ".txt" + job_type_ext)
+        return send_from_directory(config["OUTPUT"], job_id + ".txt" + job_type_ext, as_attachment=True), 200
+
+@app.route("/api/cancel", methods=["POST"])
+def cancel():
+    job_id = request.get_json()
+    jobs[job_id].terminate_process()
+    terminated = jobs.pop(job_id, None)
+    job_type_ext = os.path.splitext(terminated.output)[1]
+    if job_type_ext == ".mp4":
+        os.remove(terminated.video)
+        terminated.cleanup_temp()
+    else:
+        os.remove(terminated.image_path)
+    try:
+        os.remove(terminated.output)
+    except FileNotFoundError:
+        pass
+    return jsonify("cancelled"), 200
+
+
+@app.route("/api/supportedfiles", methods=["GET"])
+def supported_files():
+    return send_from_directory(".", "supportedFiles.txt")
 
 if __name__ == "__main__":
     print ("=" * 50)
