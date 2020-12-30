@@ -13,6 +13,8 @@ config = app.config
 cors = CORS(app)
 
 jobs = {}
+max_jobs = 2
+progress_update_rate = 0.5
 
 @app.route("/api/convert", methods=["POST"])
 def convert():
@@ -23,6 +25,10 @@ def convert():
     temp_path = os.path.join(config["TEMP"], file_id + file_ext)
     fileUpload.save(temp_path)
     output_path = config["OUTPUT"] + file_id
+
+    if len(jobs) >= max_jobs:
+        print ("Too many jobs")
+        return jsonify("max"), 200
 
     if file_ext in config["IMG_EXT"]:
         p = convert_image_process(
@@ -57,7 +63,8 @@ def convert():
         os.remove(temp_path)
         return jsonify("Bad format")
 
-def cancel(job_id = None):
+def cancel(job_id):
+    print ("Cancelled")
     jobs[job_id].terminate_process()
     terminated = jobs.pop(job_id, None)
     job_type_ext = os.path.splitext(terminated.output)[1]
@@ -74,20 +81,23 @@ def cancel(job_id = None):
 
 @app.route("/api/getprogress", methods=["POST"])
 def get_progress():
+    print ("Getting progress")
     job_id = request.get_json()
     job = jobs[job_id]
     def progress_stream():
         try:
             while True:
                 yield "data:" + str(job.get_progress()) + "\n\n"
-                time.sleep(1)
+                time.sleep(progress_update_rate)
         except GeneratorExit:
-            print ("Client disconnected from progress stream")
-            cancel(job_id)
+            if job.get_progress() < 100 and job_id in jobs:
+                print ("Client disconnected from progress stream")
+                cancel(job_id)
     return Response(progress_stream(), mimetype="text/event-stream")
 
 @app.route("/api/getoutput", methods=["POST"])
 def get_output():
+    print ("Getting output")
     job_id = request.get_json()
     done = jobs.pop(job_id, None)
     job_type_ext = os.path.splitext(done.output)[1]
@@ -99,10 +109,6 @@ def cancel_conversion():
     job_id = request.get_json()
     cancelled = cancel(job_id)
     return jsonify(cancelled), 200
-
-@app.route("/api/supportedfiles", methods=["GET"])
-def supported_files():
-    return send_from_directory(".", "supportedFiles.txt")
 
 if __name__ == "__main__":
     print ("=" * 50)

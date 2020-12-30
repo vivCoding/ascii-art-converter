@@ -82,11 +82,16 @@ convertButton.click(function(e) {
         }).then(response => {
             return response.json();
         }).then(data => {
-            checkProgress(data);
-            cancelButton.unbind("click");
-            cancelButton.click(function() {
-                cancelConversion(data);
-            });
+            if (data != "max") {
+                checkProgress(data);
+                cancelButton.unbind("click");
+                cancelButton.click(function() {
+                    cancelConversion(data);
+                });
+            } else {
+                alert("Sorry, we are running too many jobs right now. The max amount we allow at a time is 100. Please try again later!");
+                showError();
+            }
         }).catch(error => {
             progressStream.close();
             showError();
