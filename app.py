@@ -4,8 +4,7 @@ from werkzeug.utils import secure_filename
 from uuid import uuid4
 import os
 import time
-from convert_image import convert_image_process
-from convert_video import convert_video_process
+from convert import ConvertImageProcess, ConvertVideoProcess
 
 app = Flask(__name__)
 app.config.from_object("config.Config")
@@ -13,7 +12,7 @@ config = app.config
 cors = CORS(app)
 
 jobs = {}
-max_jobs = 2
+max_jobs = config["MAX_JOBS"]
 progress_update_rate = 0.5
 
 @app.route("/api/convert", methods=["POST"])
@@ -31,8 +30,8 @@ def convert():
         return jsonify("max"), 200
 
     if file_ext in config["IMG_EXT"]:
-        p = convert_image_process(
-            temp_path, output_path,
+        p = ConvertImageProcess(
+            temp_path, output_path, override=False,
             image_reducer = int(data["imageReduction"]),
             fontSize = int(data["fontSize"]),
             spacing = float(data["spacing"]),
@@ -45,7 +44,7 @@ def convert():
         return jsonify(file_id), 200
     elif file_ext in config["VID_EXT"]:
         temp_batch_folder = os.path.join(config["TEMP"], file_id + "/")
-        p = convert_video_process(
+        p = ConvertVideoProcess(
             temp_path, output_path,
             temp_folder=temp_batch_folder,
             frame_frequency=int(data["frameFrequency"]),
@@ -69,14 +68,12 @@ def cancel(job_id):
     terminated = jobs.pop(job_id, None)
     job_type_ext = os.path.splitext(terminated.output)[1]
     if job_type_ext == ".mp4":
-        os.remove(terminated.video)
+        os.remove(terminated.video_path)
         terminated.cleanup_temp()
     else:
         os.remove(terminated.image_path)
-    try:
-        os.remove(terminated.output)
-    except FileNotFoundError:
-        pass
+    if os.path.isfile(terminated.output_path):
+        os.remove(terminated.output_path)
     return True
 
 @app.route("/api/getprogress", methods=["POST"])
@@ -101,7 +98,7 @@ def get_output():
     job_id = request.get_json()
     done = jobs.pop(job_id, None)
     job_type_ext = os.path.splitext(done.output)[1]
-    os.remove(done.video if job_type_ext == ".mp4" else done.image_path)
+    os.remove(done.video_path if job_type_ext == ".mp4" else done.image_path)
     return send_from_directory(config["OUTPUT"], job_id + ".txt" + job_type_ext, as_attachment=True), 200
 
 @app.route("/api/cancel", methods=["POST"])
