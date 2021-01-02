@@ -5,6 +5,7 @@ html {
 body {
     margin: 0;
     background-color: rgb(40, 51, 51);
+    /* background-color: blue; */
     color: white;
     font-family: monospace;
     font-size: 170%;
@@ -29,6 +30,12 @@ u {
     /* border-bottom: 0.15em white solid; */
 }
 
+iframe {
+    /* width: 25vw;
+    height: 14.0625vw; */
+    padding: 1em;
+}
+
 .strikethrough {
     text-decoration: line-through black 0.1em;
 }
@@ -37,6 +44,13 @@ nav {
     position: sticky;
     top: 0;
     background-color: rgb(38, 43, 43);
+}
+
+nav label, #hamburger {
+    display: none;
+}
+
+nav #navLinks {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
@@ -148,7 +162,7 @@ nav a:hover {
     max-width: 50vw;
     display: flex;
     flex-direction: column;
-    flex-wrap: wrap;
+    /* flex-wrap: wrap; */
     justify-content: center;
 }
 
@@ -174,7 +188,7 @@ nav a:hover {
     margin: 0.5em;
     margin-bottom: 1em;
     font-size: 80%;
-    width: 25vw;
+    width: 40%;
     height: 1.25em;
     border: 0.2em black solid;
 }
@@ -184,10 +198,6 @@ nav a:hover {
     width: 0%;
     height: 1.25em;
     background-color: black;
-}
-
-iframe {
-    padding: 1em;
 }
 
 footer {

@@ -3,14 +3,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel = "stylesheet" href = "static/style.css">
+    <link rel = "stylesheet" href = "static/mobile-style.css">
     <title>ASCII Art Converter</title>
 </head>
 <body>
     <nav>
-        <a class = "scrollToLink" href = "#convert"><u>Convert</u></a>
-        <a class = "scrollToLink" href = "#download"><u>Download</u></a>
-        <a class = "scrollToLink" href = "#about"><u>About</u></a>
-        <a class = "scrollToLink" href = "#support"><u>Support</u></a>
+        <label for = "hamburger">&#9776;</label>
+        <input type = "checkbox" id = "hamburger"/>
+        <div id = "navLinks">
+            <a class = "scrollToLink" href = "#convert"><u>Convert</u></a>
+            <a class = "scrollToLink" href = "#download"><u>Download</u></a>
+            <a class = "scrollToLink" href = "#about"><u>About</u></a>
+            <a class = "scrollToLink" href = "#support"><u>Support</u></a>
+        </div>
     </nav>
     <div id = "content">
         <div id = "main">
@@ -20,7 +25,7 @@
                 <!-- <p>. . .</p> -->
                 <p>Add that "text-ure" to that photo or video! Give it some "character"!</p>
                 <p>Don't believe in my puns? See it for yourself!</p>
-                <iframe width="500" height="300" src="https://www.youtube.com/embed/os_NGwvW3xA" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/os_NGwvW3xA" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 <p>Looks pretty cool, right?</p>
                 <a class = "scrollToLink" href = "#convert"><u>Give it a shot!</u></a>
             </div>
@@ -97,7 +102,7 @@
             <br>
             <div id = "download" class = "section">
                 <h1>Download</h1>
-                <p>The online version does have its limits.<br>Wanna have the ability to convert to ASCII anytime? Now you can!</p>
+                <p>The online version does have its limitations.<br>Wanna have the ability to convert to ASCII anytime? Now you can!</p>
                 <a href = "">Windows</a>
                 <a href = "">Linux</a>
                 <a href = "">Python code</a>
@@ -111,7 +116,7 @@
                 </p>
                 <p>Ho boy, projects can get big quick!</p>
                 <p>
-                    Regardless, this was all just for funsies and coding experimentation. I honestly don't care how many people use it, it'll just be here until the Internet decides to die.
+                    Regardless, this was all just for funsies and coding experimentation. I honestly don't care how many people use it, it'll just be here until the servers or the Internet decides to die.
                 </p>
             </div>
             <br>

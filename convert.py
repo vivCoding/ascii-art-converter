@@ -66,11 +66,9 @@ def convert_image(img=None, image_reducer=10, fontSize=10, spacing=1.1, maxsize=
         rows = len(img)
         cols = len(img[0])
 
-        # set up image scaling based on font size and line spacing
-        fontSize = 10
-        spacing = 1.1
         # reducer takes image_reducer percentage, and will skip nth pixels when converting
         reducer = int(100 / image_reducer)
+        # set up image scaling based on font size and line spacing
         scale = fontSize * 0.8 / reducer * spacing
         # create new image with black bacground (because white text on black looks cooler)
         output_img = Image.new("L", (int(cols * scale), int(rows * scale)), color=0)
@@ -183,7 +181,7 @@ def convert_image(img=None, image_reducer=10, fontSize=10, spacing=1.1, maxsize=
         print (e)
         exit(0)
 
-def convert_image_path_and_save(image_path, output_path="output", override=False,
+def convert_image_path_and_save(image_path, output_path="output.jpg", override=False,
                                 image_reducer=10, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@",
                                 logs=False, progress_tracker=None):
     """Converts an image from a given path into ASCII art and saves it to disk
@@ -240,7 +238,7 @@ class ConvertImageProcess:
     get_progress
         - returns the current progress of the conversion
     """
-    def __init__(self, image_path, output_path="output", override=False,
+    def __init__(self, image_path, output_path="output.jpg", override=False,
                 image_reducer=100, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@", logs=False):
         self.progress = Value("f", 0, lock=True)
         self.image_path = image_path
@@ -354,7 +352,7 @@ def _convert_batch(batch_folder, frames_per_batch,
             progress_tracker.value += progress_step
             if logs : print ("Progress: %.4f%%" % progress_tracker.value, end="\r")
 
-def convert_video_path_and_save(video_path, output_path="output", temp_folder = "./temp",
+def convert_video_path_and_save(video_path, output_path="output.mp4", temp_folder = "./temp",
                                 frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@",
                                 logs=False, progress_tracker=None):
     """Converts video from given path to ASCII art and saves it to disk as .txt.mp4 format
@@ -534,12 +532,12 @@ class ConvertVideoProcess:
     get_progress
         - returns the current progress of the conversion
     """
-    def __init__(video_path, output_path="output", temp_folder = "./temp",
+    def __init__(self, video_path, output_path="output.mp4", temp_folder = "./temp",
                 frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1,
                 maxsize=None, chars=" .*:+%S0#@", logs=False):
         self.progress = Value("f", 0, lock=True)
         self.video_path = video_path
-        self.output_path = output
+        self.output_path = output_path
         self.temp_folder = temp_folder
         self._process = Process(target=convert_video_path_and_save, args =(
             video_path, output_path, temp_folder,

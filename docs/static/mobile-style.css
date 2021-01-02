@@ -1,0 +1,74 @@
+@media only screen and (max-width: 600px) {
+    body {
+        background-color: rgb(40, 51, 51);
+        /* background-color: darkblue; */
+        font-size: 100%;
+    }
+
+    iframe {
+        width: 75vw;
+        height: 42.1875vw;
+    }
+
+    nav {
+        /* margin-left: auto; */
+        /* text-align: left; */
+        position: fixed;
+        width: 100%;
+        top: 0;
+        left: 0;
+        right: 0;
+    }
+
+    nav label {
+        text-align: right;
+        display: block;
+        padding: 0.5em;
+        font-size: xx-large;
+        color: white;
+    }
+
+    nav #navLinks {
+        display: none;
+        flex-direction: column;
+        padding: 1em;
+    }
+
+    nav input:checked ~ #navLinks {
+        display: flex;
+    }
+
+    nav a {
+        padding: 0.5em;
+        text-align: center;
+    }
+
+    #content {
+        padding-top: 5em;
+    }
+
+    #main {
+        min-height: 80vh;
+    }
+
+    #secondary {
+        /* padding: 1em 5em; */
+        max-width: 65vw;
+        padding: 1em 2em;
+    }
+
+    #convert button {
+        margin: 0.5em 0
+    }
+
+    #options #conversionOptions .optionType {
+        display: flex;
+        flex-direction: column;
+        /* flex-direction: row;
+        align-items: center; */
+    }
+
+    .progressBarContainer {
+        width: 100%;
+    }
+}
