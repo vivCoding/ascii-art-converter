@@ -9,7 +9,6 @@ import imageio
 from multiprocessing import Process, Pool, Value
 import threading
 import sys
-import getopt
 import argparse
 
 IMG_EXT = [
@@ -595,7 +594,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-z", "--fontSize",
-        type=float,
+        type=int,
         dest="fontSize",
         metavar="SIZE",
         choices=range(0, 100),
@@ -604,7 +603,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-s,", "--spacing",
+        "-s", "--spacing",
         type=float,
         dest="spacing",
         metavar="SPACING",
@@ -658,13 +657,4 @@ if __name__ == "__main__":
             )
     else:
         print ("File", args.path_to_file,"could not be found!")
-
-    # try:
-    #     args = sys.argv[1:]
-    #     file_path = args[0]
-    #     output_path = args[1]
-    #     file_type = os.path.splitext(file_path)
-    #     args = parser.parse_args()        
-    # except:
-    #     print ("Invalid parameters!")
 

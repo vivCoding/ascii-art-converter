@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, Response, session
+from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from uuid import uuid4
@@ -10,12 +10,21 @@ app = Flask(__name__)
 app.secret_key = "secret"
 app.config.from_object("config.Config")
 config = app.config
-cors = CORS(app)
+cors = CORS(app, resources=r"/api/*", origins=config["CORS"])
 
 jobs = {}
 max_jobs = config["MAX_JOBS"]
 jobs_count = 0
 progress_update_rate = config["PROGRESS_RATE"]
+
+@app.route("/", methods=["GET"])
+def index():
+    return """
+    <body style = "background-color: black; color: white; padding: 2em">
+        <h1>ASCII Art Converter</h1>
+        <a href = "https://github.com/vvvuPurdue/ascii_art_converter" style = "color: magenta">View on GitHub</a>
+    </body>
+    """
 
 @app.route("/api/convert", methods=["POST"])
 def convert():
@@ -109,7 +118,8 @@ def get_output():
     done = jobs.pop(job_id, None)
     job_type_ext = os.path.splitext(done.output_path)[1]
     os.remove(done.video_path if job_type_ext == ".mp4" else done.image_path)
-    return send_from_directory(config["OUTPUT"], job_id + job_type_ext, as_attachment=True), 200
+    filename = secure_filename(job_id + job_type_ext)
+    return send_from_directory(config["OUTPUT"], filename, as_attachment=True), 200
 
 @app.route("/api/cancel", methods=["POST"])
 def cancel_conversion():
@@ -119,7 +129,7 @@ def cancel_conversion():
 
 if __name__ == "__main__":
     print ("=" * 50)
-    if not os.path.isdir("./temp"):
-        os.mkdir("./temp")
-    app.run(host="0.0.0.0", port=5000, debug=1)
+    if not os.path.isdir(config["TEMP"]) : os.mkdir(config["TEMP"])
+    if not os.path.isdir(config["OUTPUT"]) : os.mkdir(config["OUTPUT"])
+    app.run(host="10.0.0.135", port=5000, debug=1)
 

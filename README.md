@@ -1,11 +1,7 @@
-# Image/Video to ASCII Converter
-Converts images or videos to text characters (ASCII art) based on pixel intensity.
+# ASCII Art Converter
+Converts regular images or videos into text characters (ASCII art), based on pixel intensity, giving it some extra "text-ure"!
 
-Images are automatically outputted as `.txt.jpg` files, and videos as `.txt.mp4`
-
-(The `.txt` is included to avoid accidentally overwriting original image)
-
-Developed on Python 3.8.6
+Developed with Python 3.8.6
 
 ## Installation
 
@@ -13,47 +9,54 @@ Be sure you have Python 3 or greater installed.
 
 Dependencies are found in `requirements.txt`. They can be installed using command: `pip install -r requirements.txt`
 
-**Known issue with Pillow:** https://github.com/python-pillow/Pillow/issues/4225
+<!-- **Known issue with Pillow:** https://github.com/python-pillow/Pillow/issues/4225
 
-Solution: `pip install --compile --install-option=-O1 Pillow`
+Solution: `pip install --compile --install-option=-O1 Pillow` -->
 
-## Image conversion
+## Usage
 
-To convert images to ASCII art, use `convert_image.py`
+```
+python convert.py <path_to_image_video> [path_to_output] [OPTIONS] [-h]
+```
 
-```python convert_image.py path_to_image output_path image_reducer```
+### Positional Arguments
+- `path_to_file` : File path to file (image or video) to convert
+- `path_to_output` : Optional. File path to put converted and final image/video. File extension is also optional. Default is ./output.jpg (.mp4 if video)
 
-### Parameters explanation:
-- `path_to_image`: path to your image to convert. Must include file extension
-- `output_path`: path to output the final result
-- `image_reducer`: percentage of image pixels to preserver
-  - Use 100 to keep original
-  - It is **highly recommended** to *decrease* this in order to be performant
+### Other Options
+| Argument | Long Argument | Description | Default |
+| -------- | ------------- | --- | ----- |
+|`-i PERCENTAGE`|`--image_reducer PERCENTAGE`|Percentage (0 - 100) of pixels that will be converted to text. The higher the value, the higher the final image size.|10|
+|`-z SIZE`|`--fontSize SIZE`|Font size for the characters.|10|
+|`-s SPACING`|`--spacing SPACING`|Line spacing between each character|1.1|
+|`-c "CHARS"`|`--chars "CHARS"`|Characters to use when converting the pixel intensities. From left to right, lower intensity to higher intensity. Must wrap parameter in quotation marks|` .*:+%S0#@`|
+|`-wh WIDTH HEIGHT`|`--maxsize WIDTH HEIGHT`|Max width and height of final output in pixels|None|
+|`-f FRAME_FREQUENCY`|`--frame_frequency FRAME_FREQUENCY`|VIDEO ONLY. Determines how many frames to skip before capturing/converting. Keep 1 to retain all frames and FPS|24|
+
+
   
-### Examples
+## Examples
 
-Converting `fox.png` and keeping 50% of pixels (skipping every other pixel). Final result will be `fox.txt.jpg`
+- Converting `lake.jpg` to `newLake.jpg`, converting 10% pixels to text characters
+```
+python convert.py lake.jpg newLake.jpg -i 10
+```
 
-```python convert_image.py fox.png fox 50```
+- Converting `lake.jpg` to `coolerLake.jpg`, converting 10% pixels to text characters, with custom character set `.-:lo0@`
+```
+python convert.py lake.jpg coolerlake.jpg -i 10 -c ".:lo0@"
+```
+- Converting `meme.png` to `memeText.png`, converting 50% pixels to text characters with spacing of 0.9, max width of 1280, max height of 1000, and font size 20
+```
+python convert.py meme.png memeText.png -i 50 -s 0.9 -wh 1280 1000 -z 20
+```
 
-## Video conversion
+- Convert `cat.mp4` to `catText.mp4`, converting 15% pixels to text characters, and keeping every other frame (every 2nd frame)
+```
+python convert.py cat.mp4 catText.mp4 -i 15 -f 2
+```
 
-To convert videos to ASCII art, use `convert_video.py`
-
-```python convert_video.py path_to_video output_path frame_frequency image_reducer```
-
-### Parameters explanation:
-- `path_to_video`: path to your video to convert. Must include file extension
-- `output_path`: path to output the final result
-- `frame_frequency`: determines how many frames to skip before capturing/converting a frame image
-  - Keep 1 to keep all frames
-  - It is **highly recommended** to *increase* this in order to be performant
-- `image_reducer`: percentage of image pixels to preserver
-  - 100 to keep original
-  - It is **highly recommended** to *decrease* this in order to be performant
-  
-### Examples
-
-Converting `funnyCatVideo.mp4`, keeping a third of the frames, and reducing image quality by 30%. Final result will be `funnyCatVideo.txt.mp4`
-
-```python convert_video.py funnyCatVideo.mp4 funnyCatVideo 3 30```
+- Convert `costaRica.mp4` to `costaRicaText.mp4`, converting 5% pixels to text characters, with font size 12, spacing 1.2, and keeping every single frame (retaining that glorious 60FPS!)
+```
+python convert.py costaRica.mp4 costaRicaText.mp4 -i 5 -z -s 1.2 20 -f 1
+```
