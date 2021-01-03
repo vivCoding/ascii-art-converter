@@ -10,7 +10,8 @@ app = Flask(__name__)
 app.secret_key = "secret"
 app.config.from_object("config.Config")
 config = app.config
-cors = CORS(app, resources=r"/api/*", origins=config["CORS"])
+# cors = CORS(app, resources=r"/api/*", origins=config["CORS"])
+cors = CORS(app)
 
 jobs = {}
 max_jobs = config["MAX_JOBS"]
@@ -131,5 +132,5 @@ if __name__ == "__main__":
     print ("=" * 50)
     if not os.path.isdir(config["TEMP"]) : os.mkdir(config["TEMP"])
     if not os.path.isdir(config["OUTPUT"]) : os.mkdir(config["OUTPUT"])
-    app.run(host="10.0.0.135", port=5000, debug=1)
+    app.run(host="0.0.0.0", port=5000, debug=1)
 
