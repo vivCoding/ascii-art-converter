@@ -3,11 +3,9 @@ Converts regular images or videos into text characters (ASCII art), based on pix
 
 Developed with Python 3.8.6
 
-[Installation](#-installation)
-
-[Usage](#-usage)
-
-[Examples](#-examples)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Examples](#examples)
 
 # Installation
 
