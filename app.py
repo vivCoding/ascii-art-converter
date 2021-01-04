@@ -7,16 +7,23 @@ import time
 from convert import ConvertImageProcess, ConvertVideoProcess
 
 app = Flask(__name__)
-app.secret_key = "secret"
 app.config.from_object("config.Config")
-config = app.config
-# cors = CORS(app, resources=r"/api/*", origins=config["CORS"])
-cors = CORS(app)
+cors = CORS(app, origins=app.config["CORS"])
+
+IMG_EXT = app.config["IMG_EXT"]
+VID_EXT = app.config["VID_EXT"]
+TEMP = app.config["TEMP"]
+OUTPUT= app.config["OUTPUT"]
+MAX_JOBS = app.config["MAX_JOBS"]
+PROGRESS_RATE = app.config["PROGRESS_RATE"]
+MAX_PROCESSES = app.config["MAX_PROCESSES"]
+MAX_THREADS = app.config["MAX_THREADS"]
+
+if not os.path.isdir(TEMP) : os.mkdir(TEMP)
+if not os.path.isdir(OUTPUT) : os.mkdir(OUTPUT)
 
 jobs = {}
-max_jobs = config["MAX_JOBS"]
 jobs_count = 0
-progress_update_rate = config["PROGRESS_RATE"]
 
 @app.route("/", methods=["GET"])
 def index():
@@ -35,17 +42,17 @@ def convert():
     fileUpload = request.files["fileUpload"]
     filename, file_ext = os.path.splitext(fileUpload.filename)
     file_id = uuid4().hex
-    temp_path = os.path.join(config["TEMP"], file_id + file_ext)
+    temp_path = os.path.join(TEMP, file_id + file_ext)
     fileUpload.save(temp_path)
-    output_path = config["OUTPUT"] + file_id
+    output_path = OUTPUT + file_id
 
-    if len(jobs) >= max_jobs:
+    if len(jobs) >= MAX_JOBS:
         print ("Too many jobs")
         return jsonify("max"), 200
     
     global jobs_count
     jobs_count += 1
-    if file_ext in config["IMG_EXT"]:
+    if file_ext in IMG_EXT:
         p = ConvertImageProcess(
             temp_path, output_path + ".jpg", override=False,
             image_reducer = int(data["imageReduction"]),
@@ -53,13 +60,14 @@ def convert():
             spacing = float(data["spacing"]),
             maxsize = None if data["maxWidth"] == "" or data["maxHeight"] == "" else (int(data["maxWidth"]), int(data["maxHeight"])),
             chars = data["characters"],
-            logs = False
+            logs = False,
+            threads = MAX_THREADS
         )
         p.start_process()
         jobs[file_id] = p
         return jsonify(file_id), 200
-    elif file_ext in config["VID_EXT"]:
-        temp_batch_folder = os.path.join(config["TEMP"], file_id + "/")
+    elif file_ext in VID_EXT:
+        temp_batch_folder = os.path.join(TEMP, file_id + "/")
         p = ConvertVideoProcess(
             temp_path, output_path + ".mp4",
             temp_folder=temp_batch_folder,
@@ -69,14 +77,15 @@ def convert():
             spacing = float(data["spacing"]),
             maxsize = None if data["maxWidth"] == "" or data["maxHeight"] == "" else (int(data["maxWidth"]), int(data["maxHeight"])),
             chars = data["characters"],
-            logs = False
+            logs = False,
+            processes = MAX_PROCESSES
         )
         p.start_process()
         jobs[file_id] = p
         return jsonify(file_id), 200
     else:
         os.remove(temp_path)
-        return jsonify("Bad format")
+        return jsonify("Bad format"), 200
 
 def cancel(job_id):
     print ("- Cancelling")
@@ -105,7 +114,7 @@ def get_progress():
         try:
             while True:
                 yield "data:" + str(job.get_progress()) + "\n\n"
-                time.sleep(progress_update_rate)
+                time.sleep(PROGRESS_RATE)
         except GeneratorExit:
             if job.get_progress() < 100 and job_id in jobs:
                 print ("- Client disconnected from progress stream")
@@ -120,7 +129,7 @@ def get_output():
     job_type_ext = os.path.splitext(done.output_path)[1]
     os.remove(done.video_path if job_type_ext == ".mp4" else done.image_path)
     filename = secure_filename(job_id + job_type_ext)
-    return send_from_directory(config["OUTPUT"], filename, as_attachment=True), 200
+    return send_from_directory(OUTPUT, filename, as_attachment=True), 200
 
 @app.route("/api/cancel", methods=["POST"])
 def cancel_conversion():
@@ -130,7 +139,5 @@ def cancel_conversion():
 
 if __name__ == "__main__":
     print ("=" * 50)
-    if not os.path.isdir(config["TEMP"]) : os.mkdir(config["TEMP"])
-    if not os.path.isdir(config["OUTPUT"]) : os.mkdir(config["OUTPUT"])
-    app.run(host="0.0.0.0", port=5000, debug=1)
+    app.run(host="0.0.0.0")
 

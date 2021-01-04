@@ -29,11 +29,8 @@ VID_EXT = [
     ".mp4"
 ]
 
-MAX_PROCESSES = 4
-MAX_THREADS = 4
-
 def convert_image(img=None, image_reducer=10, fontSize=10, spacing=1.1, maxsize=None,
-                    chars=" .*:+%S0#@", logs=False, progress_tracker=None):
+                    chars=" .*:+%S0#@", logs=False, threads=4, progress_tracker=None):
     """Converts a cv2 image object into ASCII art
 
     Parameters
@@ -53,6 +50,8 @@ def convert_image(img=None, image_reducer=10, fontSize=10, spacing=1.1, maxsize=
         - lowest pixel intensity to highest, from left to right
     logs : bool
         - determines whether or not to print progress logs
+    threads : int
+        - determines how many threads to run on (multithreading)
     progress_tracker : multiprocessing.Value
         - used to track overall conversion progress between all processes/threads
         - Value("f", 0, lock=True)
@@ -130,7 +129,7 @@ def convert_image(img=None, image_reducer=10, fontSize=10, spacing=1.1, maxsize=
             final_results.append(results)
 
         # split up jobs with multithreading
-        batches = MAX_THREADS
+        batches = threads
         rows_per_batch = int(rows / batches)
         threads = []
         for batch in range(batches):
@@ -182,7 +181,7 @@ def convert_image(img=None, image_reducer=10, fontSize=10, spacing=1.1, maxsize=
 
 def convert_image_path_and_save(image_path, output_path="output.jpg", override=False,
                                 image_reducer=10, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@",
-                                logs=False, progress_tracker=None):
+                                logs=False, threads=4, progress_tracker=None):
     """Converts an image from a given path into ASCII art and saves it to disk
 
     Parameters
@@ -201,7 +200,7 @@ def convert_image_path_and_save(image_path, output_path="output.jpg", override=F
         img = cv2.imread(image_path, 2)
         output = convert_image(
             img, image_reducer=image_reducer, fontSize=fontSize, spacing=spacing, maxsize=maxsize, chars=chars,
-            logs=logs, progress_tracker=progress_tracker
+            logs=logs, threads=threads, progress_tracker=progress_tracker
         )
         if logs : print ("Saving image...")
         # if extension was not specified, automatically assign .jpg
@@ -238,14 +237,14 @@ class ConvertImageProcess:
         - returns the current progress of the conversion
     """
     def __init__(self, image_path, output_path="output.jpg", override=False,
-                image_reducer=100, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@", logs=False):
+                image_reducer=100, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@", logs=False, threads=4):
         self.progress = Value("f", 0, lock=True)
         self.image_path = image_path
         self.output_path = output_path
         self._process = Process(target=convert_image_path_and_save, args=(
             image_path, output_path, override,
             image_reducer, fontSize, spacing, maxsize, chars,
-            logs, self.progress
+            logs, threads, self.progress
         ))
     
     def get_process(self):
@@ -353,7 +352,7 @@ def _convert_batch(batch_folder, frames_per_batch,
 
 def convert_video_path_and_save(video_path, output_path="output.mp4", temp_folder = "./temp",
                                 frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@",
-                                logs=False, progress_tracker=None):
+                                logs=False, processes=4, progress_tracker=None):
     """Converts video from given path to ASCII art and saves it to disk as .txt.mp4 format
 
     Parameters
@@ -371,6 +370,8 @@ def convert_video_path_and_save(video_path, output_path="output.mp4", temp_folde
         - percentage of pixels in video frame image to keep
     logs : bool
         - determines whether or not to print progress logs
+    processes : int
+        - determines how many sub processes to run conversion on (multiprocessing)
     progress_tracker : multiprocessing.Value("f")
         - used to track overall conversion progress between all processes/threads
         - Value("f", 0, lock=True)
@@ -411,7 +412,7 @@ def convert_video_path_and_save(video_path, output_path="output.mp4", temp_folde
 
     # initial setup
     # we divide our work into batches
-    batches = MAX_PROCESSES
+    batches = processes
     frames_per_batch = int(total_frames / batches / frame_frequency)
     if progress_tracker is None:
         progress_tracker = Value("f", 0, lock=True)
@@ -533,7 +534,7 @@ class ConvertVideoProcess:
     """
     def __init__(self, video_path, output_path="output.mp4", temp_folder = "./temp",
                 frame_frequency=24, image_reducer=100, fontSize=10, spacing=1.1,
-                maxsize=None, chars=" .*:+%S0#@", logs=False):
+                maxsize=None, chars=" .*:+%S0#@", logs=False, processes=4):
         self.progress = Value("f", 0, lock=True)
         self.video_path = video_path
         self.output_path = output_path
@@ -541,7 +542,7 @@ class ConvertVideoProcess:
         self._process = Process(target=convert_video_path_and_save, args =(
             video_path, output_path, temp_folder,
             frame_frequency, image_reducer, fontSize,
-            spacing, maxsize, chars, logs, self.progress
+            spacing, maxsize, chars, logs, processes, self.progress
         ))
     
     def get_process(self):
