@@ -26,11 +26,20 @@ jobs_count = 0
 def index():
     return render_template("index.html")
 
+# TODO: figure out how to avoid reading/writing from disk between different requests. DO NOT RELY ON THE SAME DYNO
+# One solution is to maybe use an external database
+# Another is to combine all the functions into one convert function. Return progress instead of an id.
+# However, also have to figure out how to return the final output. And how to receive cancel input
+# Another solution is to do websockets, 2 way communication
+
 @app.route("/api/convert", methods=["POST"])
 def convert():
     print ("-" * 20)
     print ("- Job request received")
     data = request.form
+    if not os.path.isdir(TEMP) : os.mkdir(TEMP)
+    if not os.path.isdir(OUTPUT) : os.mkdir(OUTPUT)
+    
     fileUpload = request.files["fileUpload"]
     filename, file_ext = os.path.splitext(fileUpload.filename)
     file_id = uuid4().hex
@@ -42,8 +51,6 @@ def convert():
         print ("Too many jobs")
         return jsonify("max"), 200
     
-    if not os.path.isdir(TEMP) : os.mkdir(TEMP)
-    if not os.path.isdir(OUTPUT) : os.mkdir(OUTPUT)
 
     global jobs_count
     jobs_count += 1
@@ -60,6 +67,8 @@ def convert():
         )
         p.start_process()
         jobs[file_id] = p
+        print (temp_path)
+        print (os.path.exists(temp_path))
         return jsonify(file_id), 200
     elif file_ext in VID_EXT:
         temp_batch_folder = os.path.join(TEMP, file_id + "/")
@@ -104,6 +113,7 @@ def cancel(job_id):
 def get_progress():
     print ("- Getting progress")
     job_id = request.get_json()
+    print (TEMP + job_id + ".jpg :", os.path.exists(TEMP + job_id + ".jpg"))
     job = jobs[job_id]
     def progress_stream():
         try:

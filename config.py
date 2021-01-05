@@ -3,8 +3,8 @@ import os
 class Config(object):
     CORS = os.environ.get("CORS")
 
-    TEMP = os.environ.get("TEMP")
-    OUTPUT = os.environ.get("OUTPUT")
+    TEMP = os.getcwd() + os.environ.get("TEMP")
+    OUTPUT = os.getcwd() + os.environ.get("OUTPUT")
     IMG_EXT = [
         ".bmp", ".dib",
         ".jpeg", ".jpg", ".jpe",
