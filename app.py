@@ -103,8 +103,9 @@ def cancel(job_id):
 @app.route("/api/getprogress", methods=["POST"])
 def get_progress():
     print ("- Getting progress")
-    print (jobs)
     job_id = request.get_json()
+    print (jobs)
+    print (os.path.isdir(TEMP + job_id + ".jpg"))
     job = jobs[job_id]
     def progress_stream():
         try:
