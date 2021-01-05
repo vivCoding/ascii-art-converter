@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, Response
+from flask import Flask, request, jsonify, send_from_directory, Response, render_template
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from uuid import uuid4
@@ -27,12 +27,7 @@ jobs_count = 0
 
 @app.route("/", methods=["GET"])
 def index():
-    return """
-    <body style = "background-color: black; color: white; padding: 2em">
-        <h1>ASCII Art Converter</h1>
-        <a href = "https://github.com/vvvuPurdue/ascii_art_converter" style = "color: magenta">View on GitHub</a>
-    </body>
-    """
+    return render_template("index.html")
 
 @app.route("/api/convert", methods=["POST"])
 def convert():

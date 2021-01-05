@@ -76,7 +76,7 @@ convertButton.click(function(e) {
         showProgress();
         console.log("Converting...")
 
-        fetch("http://0.0.0.0:5000/api/convert", {
+        fetch("/api/convert", {
             method: "POST",
             body: formData
         }).then(response => {
@@ -105,7 +105,7 @@ convertButton.click(function(e) {
 });
 
 function checkProgress(data) {
-    progressStream = new SSE("http://0.0.0.0:5000/api/getprogress", {
+    progressStream = new SSE("/api/getprogress", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -118,7 +118,7 @@ function checkProgress(data) {
         progressBar.css("width", progress + "%");
         if (progress == 100) {
             progressStream.close();
-            fetch("http://0.0.0.0:5000/api/getoutput", {
+            fetch("/api/getoutput", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -146,7 +146,7 @@ function cancelConversion(data) {
     progressStream.close();
     cancelMessage.text("Cancelling...");
     showCanceled();
-    fetch("http://0.0.0.0:5000/api/cancel", {
+    fetch("/api/cancel", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
