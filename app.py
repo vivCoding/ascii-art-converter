@@ -60,6 +60,7 @@ def convert():
         p.start_process()
         jobs[file_id] = p
         print (jobs)
+        print (temp_path)
         return jsonify(file_id), 200
     elif file_ext in VID_EXT:
         temp_batch_folder = os.path.join(TEMP, file_id + "/")
