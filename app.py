@@ -30,6 +30,8 @@ def index():
 def convert():
     print ("-" * 20)
     print ("- Job request received")
+    if not os.path.isdir(TEMP) : os.mkdir(TEMP)
+    if not os.path.isdir(OUTPUT) : os.mkdir(OUTPUT)
     data = request.form
     fileUpload = request.files["fileUpload"]
     filename, file_ext = os.path.splitext(fileUpload.filename)
@@ -41,9 +43,6 @@ def convert():
     if len(jobs) >= MAX_JOBS:
         print ("Too many jobs")
         return jsonify("max"), 200
-    
-    if not os.path.isdir(TEMP) : os.mkdir(TEMP)
-    if not os.path.isdir(OUTPUT) : os.mkdir(OUTPUT)
 
     global jobs_count
     jobs_count += 1
