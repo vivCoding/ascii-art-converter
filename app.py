@@ -36,6 +36,8 @@ def index():
 def convert():
     print ("-" * 20)
     print ("- Job request received")
+    if not os.path.isdir(TEMP) : os.mkdir(TEMP)
+    if not os.path.isdir(OUTPUT) : os.mkdir(OUTPUT)
     data = request.form
     if not os.path.isdir(TEMP) : os.mkdir(TEMP)
     if not os.path.isdir(OUTPUT) : os.mkdir(OUTPUT)
@@ -67,8 +69,7 @@ def convert():
         )
         p.start_process()
         jobs[file_id] = p
-        print (temp_path)
-        print (os.path.exists(temp_path))
+        print (temp_path, ":", os.path.exists(temp_path))
         return jsonify(file_id), 200
     elif file_ext in VID_EXT:
         temp_batch_folder = os.path.join(TEMP, file_id + "/")
@@ -129,8 +130,10 @@ def get_progress():
 @app.route("/api/getoutput", methods=["POST"])
 def get_output():
     print ("- Getting output")
+    print (jobs)
     job_id = request.get_json()
     done = jobs.pop(job_id, None)
+    print (done)
     job_type_ext = os.path.splitext(done.output_path)[1]
     os.remove(done.video_path if job_type_ext == ".mp4" else done.image_path)
     filename = secure_filename(job_id + job_type_ext)

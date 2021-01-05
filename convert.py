@@ -72,7 +72,7 @@ def convert_image(img=None, image_reducer=10, fontSize=10, spacing=1.1, maxsize=
         output_img = Image.new("L", (int(cols * scale), int(rows * scale)), color=0)
         draw = ImageDraw.Draw(output_img)
         # load ttf font
-        font = ImageFont.truetype("NotoMono-Regular.ttf", fontSize, encoding="unic")
+        font = ImageFont.truetype("./NotoMono-Regular.ttf", fontSize, encoding="unic")
 
         # defines the subsets of pixel intensities
         # Can vary depending on max pixel intensity or length of char set
