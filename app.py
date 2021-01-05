@@ -118,6 +118,7 @@ def get_progress():
 @app.route("/api/getoutput", methods=["POST"])
 def get_output():
     print ("- Getting output")
+    print (len(jobs))
     job_id = request.get_json()
     done = jobs.pop(job_id, None)
     job_type_ext = os.path.splitext(done.output_path)[1]
