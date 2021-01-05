@@ -57,127 +57,127 @@ def convert_image(img=None, image_reducer=10, fontSize=10, spacing=1.1, maxsize=
         - Value("f", 0, lock=True)
     """
     
-    # try:
-    if logs:
-        print ("Converting image...")
-        start_time = time.time()
-    rows = len(img)
-    cols = len(img[0])
+    try:
+        if logs:
+            print ("Converting image...")
+            start_time = time.time()
+        rows = len(img)
+        cols = len(img[0])
 
-    # reducer takes image_reducer percentage, and will skip nth pixels when converting
-    reducer = int(100 / image_reducer)
-    # set up image scaling based on font size and line spacing
-    scale = fontSize * 0.8 / reducer * spacing
-    # create new image with black bacground (because white text on black looks cooler)
-    output_img = Image.new("L", (int(cols * scale), int(rows * scale)), color=0)
-    draw = ImageDraw.Draw(output_img)
-    # load ttf font
-    font = ImageFont.truetype("NotoMono-Regular.ttf", fontSize, encoding="unic")
+        # reducer takes image_reducer percentage, and will skip nth pixels when converting
+        reducer = int(100 / image_reducer)
+        # set up image scaling based on font size and line spacing
+        scale = fontSize * 0.8 / reducer * spacing
+        # create new image with black bacground (because white text on black looks cooler)
+        output_img = Image.new("L", (int(cols * scale), int(rows * scale)), color=0)
+        draw = ImageDraw.Draw(output_img)
+        # load ttf font
+        font = ImageFont.truetype("./NotoMono-Regular.ttf", fontSize, encoding="unic")
 
-    # defines the subsets of pixel intensities
-    # Can vary depending on max pixel intensity or length of char set
-    div = np.amax(img) / (len(chars) - 1)
+        # defines the subsets of pixel intensities
+        # Can vary depending on max pixel intensity or length of char set
+        div = np.amax(img) / (len(chars) - 1)
 
-    # will be used to track our overall conversion progress
-    if progress_tracker is None:
-        progress_tracker = Value("f", 0, lock=True)
-    progress_step = 100 / (rows / reducer * 2)
+        # will be used to track our overall conversion progress
+        if progress_tracker is None:
+            progress_tracker = Value("f", 0, lock=True)
+        progress_step = 100 / (rows / reducer * 2)
 
-    final_results = []
-    def convert_rows(start, end, progress_tracker):
-        """Small function that converts a subset of rows into characters. Used in multithreading
-        Does not draw to image yet. Just calculates which rows/cols have which chars
+        final_results = []
+        def convert_rows(start, end, progress_tracker):
+            """Small function that converts a subset of rows into characters. Used in multithreading
+            Does not draw to image yet. Just calculates which rows/cols have which chars
 
-        Creates the final array of characters like so
-        - col = (colNumber, char)
-        - col_results = [col, ...]
-        - row = (rowNumber, col_results)
-        - results = [row, ....]
-        - final_results = [results, ...] (length = number of threads)
-        - final_results = [
-            [
-                (rowNumber, [
-                    (colNumber, char),
-                    (colNumber, char),
-                    (colNumber, char),
+            Creates the final array of characters like so
+            - col = (colNumber, char)
+            - col_results = [col, ...]
+            - row = (rowNumber, col_results)
+            - results = [row, ....]
+            - final_results = [results, ...] (length = number of threads)
+            - final_results = [
+                [
+                    (rowNumber, [
+                        (colNumber, char),
+                        (colNumber, char),
+                        (colNumber, char),
+                        ...
+                    ]),
+                    (rowNumber, [
+                        (colNumber, char),
+                        (colNumber, char),
+                        (colNumber, char),
+                        ...
+                    ]),
                     ...
-                ]),
-                (rowNumber, [
-                    (colNumber, char),
-                    (colNumber, char),
-                    (colNumber, char),
-                    ...
-                ]),
+                ],
                 ...
-            ],
-            ...
-        ]
-        """
-        rows = end - start
-        results = []
-        process_start = time.process_time()
-        for row in range(start, end, reducer):
-            col_results = []
-            currentRow = row * scale
-            for col in range(0, cols, reducer):
-                val = int(img[row, col] / div)
-                col_results.append((col * scale, chars[val]))
-            results.append((currentRow, col_results))
-            with progress_tracker.get_lock():
-                progress_tracker.value += progress_step
-                if logs : print ("Progress: %.4f%%" % progress_tracker.value, end="\r")
-        final_results.append(results)
+            ]
+            """
+            rows = end - start
+            results = []
+            process_start = time.process_time()
+            for row in range(start, end, reducer):
+                col_results = []
+                currentRow = row * scale
+                for col in range(0, cols, reducer):
+                    val = int(img[row, col] / div)
+                    col_results.append((col * scale, chars[val]))
+                results.append((currentRow, col_results))
+                with progress_tracker.get_lock():
+                    progress_tracker.value += progress_step
+                    if logs : print ("Progress: %.4f%%" % progress_tracker.value, end="\r")
+            final_results.append(results)
 
-    # split up jobs with multithreading
-    batches = threads
-    rows_per_batch = int(rows / batches)
-    threads = []
-    for batch in range(batches):
-        starting = rows_per_batch * batch
-        convert_thread = threading.Thread(target=convert_rows, args=(
-            starting,
-            starting + rows_per_batch,
-            progress_tracker
-        ))
-        convert_thread.start()
-        threads.append(convert_thread)
-    for t in threads:
-        t.join()
-    
-    # after we converted, draw onto image (single thread)
-    for r in range(1, len(final_results) + 1):
-        result = final_results[r - 1]
-        for row in range(len(result)):
-            currentRow = result[row][0]
-            cols = result[row][1]
-            for col in cols:
-                currentCol = col[0]
-                val = col[1]
-                draw.text((currentCol, currentRow), val, 255, font=font)
-            with progress_tracker.get_lock():
-                progress_tracker.value += progress_step
-                if logs : print ("Progress: %.4f%%" % progress_tracker.value, end="\r")
+        # split up jobs with multithreading
+        batches = threads
+        rows_per_batch = int(rows / batches)
+        threads = []
+        for batch in range(batches):
+            starting = rows_per_batch * batch
+            convert_thread = threading.Thread(target=convert_rows, args=(
+                starting,
+                starting + rows_per_batch,
+                progress_tracker
+            ))
+            convert_thread.start()
+            threads.append(convert_thread)
+        for t in threads:
+            t.join()
+        
+        # after we converted, draw onto image (single thread)
+        for r in range(1, len(final_results) + 1):
+            result = final_results[r - 1]
+            for row in range(len(result)):
+                currentRow = result[row][0]
+                cols = result[row][1]
+                for col in cols:
+                    currentCol = col[0]
+                    val = col[1]
+                    draw.text((currentCol, currentRow), val, 255, font=font)
+                with progress_tracker.get_lock():
+                    progress_tracker.value += progress_step
+                    if logs : print ("Progress: %.4f%%" % progress_tracker.value, end="\r")
 
-    # set max image
-    if (maxsize is not None):
-        output_img.thumbnail(maxsize)
+        # set max image
+        if (maxsize is not None):
+            output_img.thumbnail(maxsize)
 
-    # when we are done, there might be some rounding errors when converting some stuff to integers, thus it doesn't appear to be done
-    # So we just simply set it to 100
-    with progress_tracker.get_lock():
-        progress_tracker.value = 100
-    
-    if logs:
-        print ("Progress: %.4f%%" % progress_tracker.value)
-        print ("Time took: %.4f secs" % (time.time() - start_time))
+        # when we are done, there might be some rounding errors when converting some stuff to integers, thus it doesn't appear to be done
+        # So we just simply set it to 100
+        with progress_tracker.get_lock():
+            progress_tracker.value = 100
+        
+        if logs:
+            print ("Progress: %.4f%%" % progress_tracker.value)
+            print ("Time took: %.4f secs" % (time.time() - start_time))
 
-    return output_img
-    # except Exception as e:
-    #     # don't know what exceptions may pop up
-    #     print ("")
-    #     print ("Uh oh image converting went wrong!")
-    #     print (e)
-    #     exit(0)
+        return output_img
+    except Exception as e:
+        # don't know what exceptions may pop up
+        print ("")
+        print ("Uh oh image converting went wrong!")
+        print (e)
+        exit(0)
 
 def convert_image_path_and_save(image_path, output_path="output.jpg", override=False,
                                 image_reducer=10, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@",
