@@ -1,0 +1,15 @@
+*.py
+.vscode/
+videos/
+images/
+temp/
+output/
+old_output/
+__pycache__/
+venv/
+!requirements.txt
+!convert.py
+!app.py
+!supportedFiles.txt
+.env
+!config.py

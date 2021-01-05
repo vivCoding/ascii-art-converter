@@ -69,6 +69,7 @@ def convert():
         )
         p.start_process()
         jobs[file_id] = p
+        print (jobs)
         print (temp_path, ":", os.path.exists(temp_path))
         return jsonify(file_id), 200
     elif file_ext in VID_EXT:
@@ -94,6 +95,7 @@ def convert():
 
 def cancel(job_id):
     print ("- Cancelling")
+    print (jobs)
     terminated = jobs.pop(job_id, None)
     if terminated is None:
         print (job_id, "is not running anymore!")
@@ -114,6 +116,7 @@ def cancel(job_id):
 def get_progress():
     print ("- Getting progress")
     job_id = request.get_json()
+    print (jobs)
     print (TEMP + job_id + ".jpg :", os.path.exists(TEMP + job_id + ".jpg"))
     job = jobs[job_id]
     def progress_stream():
