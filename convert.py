@@ -257,7 +257,7 @@ class ConvertImageProcess:
         self._process.join()
     
     def terminate_process(self):
-        self._process.terminate()
+        self._process.kill()
         self._process.join()
         self._process.close()
     
@@ -555,7 +555,7 @@ class ConvertVideoProcess:
         self._process.join()
 
     def terminate_process(self):
-        self._process.terminate()
+        self._process.kill()
         self._process.join()
         self._process.close()
 

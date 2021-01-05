@@ -19,9 +19,6 @@ PROGRESS_RATE = app.config["PROGRESS_RATE"]
 MAX_PROCESSES = app.config["MAX_PROCESSES"]
 MAX_THREADS = app.config["MAX_THREADS"]
 
-if not os.path.isdir(TEMP) : os.mkdir(TEMP)
-if not os.path.isdir(OUTPUT) : os.mkdir(OUTPUT)
-
 jobs = {}
 jobs_count = 0
 
@@ -45,6 +42,9 @@ def convert():
         print ("Too many jobs")
         return jsonify("max"), 200
     
+    if not os.path.isdir(TEMP) : os.mkdir(TEMP)
+    if not os.path.isdir(OUTPUT) : os.mkdir(OUTPUT)
+
     global jobs_count
     jobs_count += 1
     if file_ext in IMG_EXT:
