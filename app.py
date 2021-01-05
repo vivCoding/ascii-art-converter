@@ -105,7 +105,9 @@ def get_progress():
     print ("- Getting progress")
     job_id = request.get_json()
     print (jobs)
-    print (os.path.isdir(TEMP + job_id + ".jpg"))
+    for i in range(10):
+        print (TEMP + job_id + ".jpg", ":", os.path.isdir(TEMP + job_id + ".jpg"))
+        time.sleep(1)
     job = jobs[job_id]
     def progress_stream():
         try:
