@@ -102,6 +102,7 @@ def cancel(job_id):
 @app.route("/api/getprogress", methods=["POST"])
 def get_progress():
     print ("- Getting progress")
+    print (jobs)
     job_id = request.get_json()
     job = jobs[job_id]
     def progress_stream():
@@ -118,9 +119,10 @@ def get_progress():
 @app.route("/api/getoutput", methods=["POST"])
 def get_output():
     print ("- Getting output")
-    print (len(jobs))
+    print (jobs)
     job_id = request.get_json()
     done = jobs.pop(job_id, None)
+    print (done)
     job_type_ext = os.path.splitext(done.output_path)[1]
     os.remove(done.video_path if job_type_ext == ".mp4" else done.image_path)
     filename = secure_filename(job_id + job_type_ext)
