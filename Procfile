@@ -1,1 +1,2 @@
-web: gunicorn app:app
+web: gunicorn -c gunicorn_config.py app:app
+worker: rq worker

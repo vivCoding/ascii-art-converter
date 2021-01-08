@@ -1,6 +1,9 @@
 click==7.1.2
+dnspython==1.16.0
+eventlet==0.30.0
 Flask==1.1.2
 Flask-Cors==3.0.9
+greenlet==0.4.17
 gunicorn==20.0.4
 imageio==2.9.0
 imageio-ffmpeg==0.4.2

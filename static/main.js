@@ -62,6 +62,7 @@ resetButton.click(function(e) {
 
 convertButton.click(function(e) {
     let file = fileUpload[0].files[0];
+    // TODO: do not check file size here. Susceptible to attacks
     if (file.size / 1000000 <= 8) {
         let formData = new FormData();
         formData.append("fileUpload", file);
@@ -82,16 +83,12 @@ convertButton.click(function(e) {
         }).then(response => {
             return response.json();
         }).then(data => {
-            if (data != "max") {
-                checkProgress(data);
-                cancelButton.unbind("click");
-                cancelButton.click(function() {
-                    cancelConversion(data);
-                });
-            } else {
-                alert("Sorry, we are running too many jobs right now. The max amount we allow at a time is 100. Please try again later!");
-                showError();
-            }
+            checkProgress(data);
+            cancelButton.unbind("click");
+            cancelButton.click(function() {
+                cancelConversion(data);
+            });
+            console.log(data);
         }).catch(error => {
             if (progressStream != null) {
                 progressStream.close();
@@ -113,7 +110,10 @@ function checkProgress(data) {
         payload: JSON.stringify(data)
     });
     progressStream.onmessage = function(event) {
-        let progress = parseFloat(event.data).toFixed(2);
+        let data = JSON.parse(event.data);
+        let status = data.status;
+        let progress = parseFloat(data.progress).toFixed(2);
+        let result = data.result;
         statusMessage.text("Converting..." + progress + "%");
         progressBar.css("width", progress + "%");
         if (progress == 100) {
@@ -123,7 +123,7 @@ function checkProgress(data) {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(result)
             }).then(response => {
                 return response.blob();
             }).then(file => {

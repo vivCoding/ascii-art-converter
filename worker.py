@@ -1,0 +1,15 @@
+import redis
+from rq import Worker, Queue, Connection
+
+listen = ["high", "default", "low"]
+# TODO: change this to env variable
+redis_url = "redis://localhost:6379"
+connection = redis.from_url(redis_url)
+
+def start_worker():
+    worker = Worker(queue_class=Queue, queues=listen)
+    worker.work()
+
+if __name__ == "__main__":
+    with Connection(connection):
+        start_worker()

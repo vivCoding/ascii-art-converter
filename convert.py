@@ -237,7 +237,7 @@ class ConvertImageProcess:
         - returns the current progress of the conversion
     """
     def __init__(self, image_path, output_path="output.jpg", override=False,
-                image_reducer=100, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@", logs=False, threads=4):
+                image_reducer=10, fontSize=10, spacing=1.1, maxsize=None, chars=" .*:+%S0#@", logs=False, threads=4):
         self.progress = Value("f", 0, lock=True)
         self.image_path = image_path
         self.output_path = output_path
