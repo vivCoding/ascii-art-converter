@@ -2,25 +2,40 @@ from convert import ConvertImageProcess, ConvertVideoProcess
 import os
 import time
 from rq import get_current_job
+from firebase_admin import credentials, initialize_app, storage
+from config import Config
 
-# TODO: store output file on firebase instead of local disk
+def firebase_init(config):
+    if not os.path.exists("key.json"):
+        key_json_file = open("key.json", "w")
+        json.dump(config.FIREBASE_KEY, key_json_file)
+        key_json_file.close()
+    
+    cred = credentials.Certificate("key.json")
+    default_app = initialize_app(cred, {
+        "storageBucket": config.FIREBASE_BUCKET
+    })
 
-def start_image_job(fileUpload, file_id, temp_folder, output_folder,
-                    image_reducer=10, fontSize=10, spacing=1.1,
-                    maxsize=None, chars=" .*:+%S0#@",logs=False, threads=4):
+def start_image_job(filename, image_reducer=10, fontSize=10, spacing=1.1,
+                    maxsize=None, chars=" .*:+%S0#@", logs=False, threads=4):
     print ("=" * 70)
-    print ("- Image job", file_id, "started!")
-    # if not os.path.isdir(temp_folder) : os.mkdir(temp_folder)
-    # if not os.path.isdir(output_folder) : os.mkdir(output_folder)
+    print ("- Image job", filename, "started!")
+    
+    config = Config()
+    firebase_init(config)
+    bucket = storage.bucket()
 
-    # filename, file_ext = os.path.splitext(fileUpload.filename)
-    # temp_path = os.path.join(temp_folder, file_id + file_ext)
-    # fileUpload.save(temp_path)
-    temp_path = fileUpload
-    output_path = os.path.join(output_folder, file_id)
+    if not os.path.isdir(config.TEMP) : os.mkdir(config.TEMP)
+    if not os.path.isdir(config.OUTPUT) : os.mkdir(config.OUTPUT)
+
+    file_path = os.path.join(config.TEMP, filename)
+    temp_blob = bucket.blob(file_path)
+    temp_blob.download_to_filename(file_path)
+    temp_blob.delete()
+    output_path = os.path.join(config.OUTPUT, filename)
 
     p = ConvertImageProcess(
-        temp_path, output_path + ".jpg", False,
+        file_path, output_path, False,
         image_reducer, fontSize, spacing, maxsize, chars,
         logs, threads
     )
@@ -33,27 +48,41 @@ def start_image_job(fileUpload, file_id, temp_folder, output_folder,
         if p.get_progress() >= 100:
             break
         time.sleep(0.1)
-    print ("- Image job", file_id, "ended!")
-    return file_id + ".jpg"
+
+    output_blob = bucket.blob(output_path)
+    output_blob.upload_from_filename(output_path)
+    os.remove(file_path)
+    os.remove(output_path)
+
+    print ("- Image job", filename, "ended!")
+    return filename
 
 
-def start_video_job(fileUpload, file_id, temp_folder, output_folder, frame_frequency=24,
+def start_video_job(filename, frame_frequency=24,
                     image_reducer=100, fontSize=10, spacing=1.1, maxsize=None,
                     chars=" .*:+%S0#@", logs=False, processes=4):
     print ("=" * 70)
-    print ("- Video job", file_id, "started!")
-    # if not os.path.isdir(temp_folder) : os.mkdir(temp_folder)
-    # if not os.path.isdir(output_folder) : os.mkdir(output_folder)
+    print ("- Video job", filename, "started!")
     
-    # filename, file_ext = os.path.splitext(fileUpload.filename)
-    # temp_path = os.path.join(temp_folder, file_id + file_ext)
-    # fileUpload.save(temp_path)
-    temp_path = fileUpload
-    output_path = os.path.join(output_folder, file_id)
-    temp_batch_folder = os.path.join(temp_folder, file_id)
+    config = Config()
+    firebase_init(config)
+    bucket = storage.bucket()
+
+    if not os.path.isdir(config.TEMP) : os.mkdir(config.TEMP)
+    if not os.path.isdir(config.OUTPUT) : os.mkdir(config.OUTPUT)
+
+    file_path = os.path.join(config.TEMP, filename)
+    print (file_path)
+    temp_blob = bucket.blob(file_path)
+    temp_blob.download_to_filename(file_path)
+    temp_blob.delete()
+    output_path = os.path.join(config.OUTPUT, filename)
+
+    file_id = os.path.splitext(filename)[0]
+    temp_batch_folder = os.path.join(config.TEMP, file_id + "/")
 
     p = ConvertVideoProcess(
-        temp_path, output_path, temp_batch_folder,
+        file_path, output_path, temp_batch_folder,
         frame_frequency, image_reducer, fontSize, spacing,
         maxsize, chars, logs, processes
     )
@@ -66,5 +95,11 @@ def start_video_job(fileUpload, file_id, temp_folder, output_folder, frame_frequ
         if p.get_progress() >= 100:
             break
         time.sleep(0.1)
-    print ("- Video job", file_id, "ended!")
-    return file_id + ".mp4"
+
+    output_blob = bucket.blob(output_path)
+    output_blob.upload_from_filename(output_path)
+    os.remove(file_path)
+    os.remove(output_path)
+
+    print ("- Video job", filename, "ended!")
+    return filename

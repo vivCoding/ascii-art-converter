@@ -1,11 +1,14 @@
 from flask import Flask, request, jsonify, send_from_directory, Response, render_template, json
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import RequestEntityTooLarge
 
 from redis import Redis
 from rq import Queue
 from rq.job import Job
 from rq.command import send_stop_job_command
+
+from firebase_admin import credentials, initialize_app, storage
 
 from uuid import uuid4
 import os
@@ -18,17 +21,30 @@ app.config.from_object("config.Config")
 config = app.config
 cors = CORS(app, origins=config["CORS"])
 
-# TODO: define connection stuff thru env vars
-redis = Redis("localhost")
+redis = Redis(config["REDIS_URL"])
 queue = Queue(connection=redis)
 
-IMG_EXT = config["IMG_EXT"]
-VID_EXT = config["VID_EXT"]
 TEMP = config["TEMP"]
 OUTPUT= config["OUTPUT"]
+IMG_EXT = config["IMG_EXT"]
+VID_EXT = config["VID_EXT"]
 PROGRESS_RATE = config["PROGRESS_RATE"]
 CONVERT_PROCESSES = config["CONVERT_PROCESSES"]
 CONVERT_THREADS = config["CONVERT_THREADS"]
+
+FAILURE_TTL = config["FAILURE_TTL"]
+RESULT_TTL = config["RESULT_TTL"]
+JOB_TIMEOUT = config["JOB_TIMEOUT"]
+
+key_json_file = open("key.json", "w")
+json.dump(config["FIREBASE_KEY"], key_json_file)
+key_json_file.close()
+
+cred = credentials.Certificate("key.json")
+default_app = initialize_app(cred, {
+    "storageBucket": config["FIREBASE_BUCKET"]
+})
+bucket = storage.bucket()
 
 @app.route("/", methods=["GET"])
 def index():
@@ -38,58 +54,66 @@ def index():
 def convert():
     print ("-" * 20)
     print ("- Job request received")
-    data = request.form
 
-    # TODO: check file upload size here
-    fileUpload = request.files["fileUpload"]
-    filename, file_ext = os.path.splitext(fileUpload.filename)
-    file_id = uuid4().hex
+    try:
+        data = request.form
+        fileUpload = request.files["fileUpload"]
+        filename, file_ext = os.path.splitext(fileUpload.filename)
+        
+        # filename will consist of random hex and file_ext
+        filename = secure_filename(uuid4().hex + file_ext)
+        temp_path = os.path.join(TEMP, filename)
+        fileUpload.save(temp_path)
 
-    # TODO: get rid of this, as it is just temporary, before firebase is implemented
-    filename, file_ext = os.path.splitext(fileUpload.filename)
-    temp_path = os.path.join(TEMP, file_id + file_ext)
-    fileUpload.save(temp_path)
+    except RequestEntityTooLarge as e:
+        print ("- File too large!")
+        return jsonify("large_file"), 413
 
     if file_ext in IMG_EXT:
+        try:
+            blob = bucket.blob(temp_path)
+            blob.upload_from_filename(temp_path)
+        except:
+            return jsonify("firebase_error"), 503
         job = queue.enqueue(start_image_job,
-            job_id = file_id,
-            fileUpload = temp_path,
-            file_id = file_id,
-            temp_folder = TEMP,
-            output_folder = OUTPUT,
+            job_id = filename, failure_ttl = 60, job_timeout = 300, result_ttl = 60,
+            filename = filename,
             image_reducer = int(data["imageReduction"]),
             fontSize = int(data["fontSize"]),
             spacing = float(data["spacing"]),
             maxsize = None if data["maxWidth"] == "" or data["maxHeight"] == "" else (int(data["maxWidth"]), int(data["maxHeight"])),
             chars = data["characters"],
-            logs = False,
+            logs = True,
             threads = CONVERT_THREADS
         )
-        return jsonify(file_id), 200
+        return jsonify(filename), 200
     elif file_ext in VID_EXT:
+        try:
+            blob = bucket.blob(temp_path)
+            blob.upload_from_filename(temp_path)
+        except:
+            return jsonify("firebase_error"), 503
         job = queue.enqueue(start_video_job,
-            job_id = file_id,
-            fileUpload = temp_path,
-            file_id = file_id,
-            temp_folder = TEMP,
-            output_folder = OUTPUT,
+            job_id = filename, failure_ttl = 60, job_timeout = 300, result_ttl = 60,
+            filename = filename,
             frame_frequency=int(data["frameFrequency"]),
             image_reducer = int(data["imageReduction"]),
             fontSize = int(data["fontSize"]),
             spacing = float(data["spacing"]),
             maxsize = None if data["maxWidth"] == "" or data["maxHeight"] == "" else (int(data["maxWidth"]), int(data["maxHeight"])),
             chars = data["characters"],
-            logs = False,
-            processes = CONVERT_THREADS
+            logs = True,
+            processes = CONVERT_PROCESSES
         )
-        return jsonify(file_id), 200
+        return jsonify(filename), 200
     else:
-        return jsonify("bad_format"), 200
+        return jsonify("bad_format"), 415
 
 @app.route("/api/getprogress", methods=["POST"])
 def get_progress():
     print ("- Getting progress")
-    job_id = request.get_json()
+    # job_id and filename are the same thing
+    job_id = secure_filename(request.get_json())
     job = Job.fetch(job_id, connection=redis)
     def progress_stream():
         try:
@@ -108,21 +132,30 @@ def get_progress():
                 try:
                     send_stop_job_command(redis, job_id)
                 except:
-                    print ("Failed to cancel", job_id)
+                    print ("- Job already canceled", job_id)
     return Response(progress_stream(), mimetype="text/event-stream")
 
 @app.route("/api/cancel", methods=["POST"])
 def cancel_conversion():
+    print ("- Canceling")
     job_id = request.get_json()
     try:
         send_stop_job_command(redis, job_id)
+        print ("- Canceled")
         return jsonify("cancel_success"), 200
     except:
+        print ("Failed to cancel", job_id)
         return jsonify("cancel_failed"), 200
 
-# TODO: this will have to be changed when firebase is implemented
 @app.route("/api/getoutput", methods=["POST"])
 def get_output():
     print ("- Getting output")
-    filename = request.get_json()
-    return send_from_directory(OUTPUT, filename, as_attachment=True), 200
+    try:
+        filename = secure_filename(request.get_json())
+        file_path = os.path.join(OUTPUT, filename)
+        blob = bucket.blob(file_path)
+        blob.download_to_filename(file_path)
+        blob.delete()
+        return send_from_directory(OUTPUT, filename, as_attachment=True), 200
+    except:
+        return jsonify("firebase_error"), 503

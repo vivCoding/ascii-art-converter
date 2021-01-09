@@ -62,43 +62,48 @@ resetButton.click(function(e) {
 
 convertButton.click(function(e) {
     let file = fileUpload[0].files[0];
-    // TODO: do not check file size here. Susceptible to attacks
-    if (file.size / 1000000 <= 8) {
-        let formData = new FormData();
-        formData.append("fileUpload", file);
-        formData.append("imageReduction", imageReduction.val());
-        formData.append("maxWidth", maxWidth.val());
-        formData.append("maxHeight", maxHeight.val());
-        formData.append("fontSize", fontSize.val());
-        formData.append("spacing", spacing.val());
-        formData.append("characters", characters.val());
-        formData.append("frameFrequency", frameFrequency.val());
-        
-        showProgress();
-        console.log("Converting...")
+    let formData = new FormData();
+    formData.append("fileUpload", file);
+    formData.append("imageReduction", imageReduction.val());
+    formData.append("maxWidth", maxWidth.val());
+    formData.append("maxHeight", maxHeight.val());
+    formData.append("fontSize", fontSize.val());
+    formData.append("spacing", spacing.val());
+    formData.append("characters", characters.val());
+    formData.append("frameFrequency", frameFrequency.val());
+    
+    showProgress();
+    console.log("Converting...")
 
-        fetch("/api/convert", {
-            method: "POST",
-            body: formData
-        }).then(response => {
-            return response.json();
-        }).then(data => {
+    fetch("/api/convert", {
+        method: "POST",
+        body: formData
+    }).then(response => {
+        console.log(response.status);
+        if (response.status == 415) {
+            showError("Uh oh, looks like we don't support that file format!");
+            return "error";
+        } else if (response.status == 413) {
+            showError("This file is too large for us! Max size we take is 5 MB");
+            return "error";
+        }
+        return response.json();
+    }).then(data => {
+        if (data != "error") {
             checkProgress(data);
             cancelButton.unbind("click");
             cancelButton.click(function() {
                 cancelConversion(data);
             });
-            console.log(data);
-        }).catch(error => {
-            if (progressStream != null) {
-                progressStream.close();
-            }
-            showError();
-            console.log(error);
-        })
-    } else {
-        alert("Holy guacomole, that file is a bit too large to handle online. We only accept files less than 8 MB. Consider downloading the software instead!");
-    }
+        }
+    }).catch(error => {
+        if (progressStream != null) {
+            progressStream.close();
+        }
+        showError("Uh oh, something went wrong! Make sure your network is stable and the file size doesn't exceed 5MB!");
+        // showError("Uh oh, something went wrong! Try again later?");
+        console.log(error);
+    })
 });
 
 function checkProgress(data) {
@@ -112,12 +117,17 @@ function checkProgress(data) {
     progressStream.onmessage = function(event) {
         let data = JSON.parse(event.data);
         let status = data.status;
-        let progress = parseFloat(data.progress).toFixed(2);
-        let result = data.result;
-        statusMessage.text("Converting..." + progress + "%");
-        progressBar.css("width", progress + "%");
-        if (progress == 100) {
+        if (status == "queued") {
+            statusMessage.text("Queued. Waiting to start...");
+        }
+        if (status == "started") {
+            let progress = parseFloat(data.progress).toFixed(2);
+            statusMessage.text("Converting..." + progress + "%");
+            progressBar.css("width", progress + "%");
+        }
+        if (status == "finished") {
             progressStream.close();
+            let result = data.result;
             fetch("/api/getoutput", {
                 method: "POST",
                 headers: {
@@ -134,7 +144,7 @@ function checkProgress(data) {
                 previewLink.attr("href", url);
                 console.log("Success");
             }).catch(error => {
-                showError();
+                showError("Uh oh, couldn't retrive file for some reason!");
                 console.log("Error getting file");
             })
         }
@@ -164,7 +174,7 @@ function cancelConversion(data) {
 
 function showProgress() {
     allInputs.prop("disabled", true);
-    statusMessage.text("Converting...");
+    statusMessage.text("Queuing...");
     progressBar.css("width", "0%");
     progress.show();
     errorMessage.hide();
@@ -178,10 +188,11 @@ function showFinished() {
     finishedMessage.show();
 }
 
-function showError() {
+function showError(message = "Uh oh, something went wrong! Try again later maybe?") {
     allInputs.prop("disabled", false);
     progress.hide();
     errorMessage.show();
+    errorMessage.text(message);
     cancelMessage.hide();
 }
 
