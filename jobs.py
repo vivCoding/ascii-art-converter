@@ -25,17 +25,23 @@ def start_image_job(filename, image_reducer=10, fontSize=10, spacing=1.1,
     firebase_init(config)
     bucket = storage.bucket()
 
-    if not os.path.isdir(config.TEMP) : os.mkdir(config.TEMP)
-    if not os.path.isdir(config.OUTPUT) : os.mkdir(config.OUTPUT)
+    local_temp = os.path.join(os.getcwd(), config.TEMP)
+    local_output = os.path.join(os.getcwd(), config.TEMP)
+    if not os.path.isdir(local_temp) : os.mkdir(local_temp)
+    if not os.path.isdir(local_output) : os.mkdir(local_output)
 
+    print ("- Retrieving from Firebase...")
     file_path = os.path.join(config.TEMP, filename)
+    local_file_path = os.path.join(os.getcwd(), file_path)
     temp_blob = bucket.blob(file_path)
-    temp_blob.download_to_filename(file_path)
+    temp_blob.download_to_filename(local_file_path)
     temp_blob.delete()
+    
     output_path = os.path.join(config.OUTPUT, filename)
+    local_output_path = os.path.join(os.getcwd(), output_path)
 
     p = ConvertImageProcess(
-        file_path, output_path, False,
+        local_file_path, local_output_path, False,
         image_reducer, fontSize, spacing, maxsize, chars,
         logs, threads
     )
@@ -49,10 +55,16 @@ def start_image_job(filename, image_reducer=10, fontSize=10, spacing=1.1,
             break
         time.sleep(0.1)
 
+    p.join_process()
+    rq_job.meta["uploading"] = "uploading"
+    rq_job.save_meta()
+    print ("- Uploading to Firebase...")
     output_blob = bucket.blob(output_path)
-    output_blob.upload_from_filename(output_path)
-    os.remove(file_path)
-    os.remove(output_path)
+    output_blob.upload_from_filename(local_output_path)
+    os.remove(local_file_path)
+    os.remove(local_output_path)
+    rq_job.meta["uploading"] = "finished"
+    rq_job.save_meta()
 
     print ("- Image job", filename, "ended!")
     return filename
@@ -71,8 +83,8 @@ def start_video_job(filename, frame_frequency=24,
     if not os.path.isdir(config.TEMP) : os.mkdir(config.TEMP)
     if not os.path.isdir(config.OUTPUT) : os.mkdir(config.OUTPUT)
 
+    print ("- Retrieving from Firebase...")
     file_path = os.path.join(config.TEMP, filename)
-    print (file_path)
     temp_blob = bucket.blob(file_path)
     temp_blob.download_to_filename(file_path)
     temp_blob.delete()
@@ -96,10 +108,16 @@ def start_video_job(filename, frame_frequency=24,
             break
         time.sleep(0.1)
 
+    p.join_process()
+    rq_job.meta["uploading"] = "uploading"
+    rq_job.save_meta()
+    print ("- Uploading to Firebase...")
     output_blob = bucket.blob(output_path)
     output_blob.upload_from_filename(output_path)
     os.remove(file_path)
     os.remove(output_path)
+    rq_job.meta["uploading"] = "finished"
+    rq_job.save_meta()
 
     print ("- Video job", filename, "ended!")
     return filename

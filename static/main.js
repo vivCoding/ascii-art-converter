@@ -33,6 +33,7 @@ let cancelButton = $("#cancelButton")
 
 let progress = $("#progress");
 let statusMessage = $("#statusMessage");
+let progressBarContainer = $("#progressBarContainer");
 let progressBar = $("#convertProgressBar");
 let finishedMessage = $("#finished");
 let errorMessage = $("#error");
@@ -73,6 +74,7 @@ convertButton.click(function(e) {
     formData.append("frameFrequency", frameFrequency.val());
     
     showProgress();
+    cancelButton.hide();
     console.log("Converting...")
 
     fetch("/api/convert", {
@@ -107,6 +109,7 @@ convertButton.click(function(e) {
 });
 
 function checkProgress(data) {
+    cancelButton.hide();
     progressStream = new SSE("/api/getprogress", {
         method: "POST",
         headers: {
@@ -119,11 +122,18 @@ function checkProgress(data) {
         let status = data.status;
         if (status == "queued") {
             statusMessage.text("Queued. Waiting to start...");
+            cancelButton.show();
         }
         if (status == "started") {
             let progress = parseFloat(data.progress).toFixed(2);
             statusMessage.text("Converting..." + progress + "%");
+            progressBarContainer.show();
             progressBar.css("width", progress + "%");
+            cancelButton.show();
+        }
+        if (status == "uploading") {
+            progressBar.css("width", "100%");
+            statusMessage.text("Getting results...");
         }
         if (status == "finished") {
             progressStream.close();

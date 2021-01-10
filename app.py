@@ -63,8 +63,8 @@ def convert():
         # filename will consist of random hex and file_ext
         filename = secure_filename(uuid4().hex + file_ext)
         temp_path = os.path.join(TEMP, filename)
-        fileUpload.save(temp_path)
-
+        local_temp_path = os.path.join(os.getcwd(), temp_path)
+        fileUpload.save(local_temp_path)
     except RequestEntityTooLarge as e:
         print ("- File too large!")
         return jsonify("large_file"), 413
@@ -72,8 +72,9 @@ def convert():
     if file_ext in IMG_EXT:
         try:
             blob = bucket.blob(temp_path)
-            blob.upload_from_filename(temp_path)
+            blob.upload_from_filename(local_temp_path)
         except:
+            os.remove(local_temp_path)
             return jsonify("firebase_error"), 503
         job = queue.enqueue(start_image_job,
             job_id = filename, failure_ttl = 60, job_timeout = 300, result_ttl = 60,
@@ -86,11 +87,12 @@ def convert():
             logs = True,
             threads = CONVERT_THREADS
         )
+        os.remove(local_temp_path)
         return jsonify(filename), 200
     elif file_ext in VID_EXT:
         try:
             blob = bucket.blob(temp_path)
-            blob.upload_from_filename(temp_path)
+            blob.upload_from_filename(local_temp_path)
         except:
             return jsonify("firebase_error"), 503
         job = queue.enqueue(start_video_job,
@@ -105,9 +107,28 @@ def convert():
             logs = True,
             processes = CONVERT_PROCESSES
         )
+        os.remove(local_temp_path)
         return jsonify(filename), 200
     else:
+        os.remove(local_temp_path)
         return jsonify("bad_format"), 415
+
+def cancel(job_id):
+    job = Job.fetch(job_id, connection=redis)
+    try:
+        if job.get_status() == "started":
+            send_stop_job_command(redis, job_id)
+            print ("- Stopped executing job", job_id)
+            return True
+        elif job.get_status() == "queued":
+            queue.remove(job_id)
+            print ("- Removed job from queue", job_id)
+            return True
+        else:
+            print ("- No job found for", job_id)
+    except:
+        print ("- No job found for", job_id)
+    return False
 
 @app.route("/api/getprogress", methods=["POST"])
 def get_progress():
@@ -120,31 +141,28 @@ def get_progress():
             while True:
                 job.refresh()
                 message = json.dumps({
-                    "status": job.get_status(),
+                    "status": job.meta.get("uploading", job.get_status()),
                     "progress": job.meta.get("progress", 0),
                     "result": str(job.result)
                 })
                 yield "data:" + message + "\n\n"
                 time.sleep(PROGRESS_RATE)
         except GeneratorExit:
-            if job.meta.get("progress", 0) < 100:
+            if job.get_status() != "finished":
                 print ("- Client disconnected from progress stream")
-                try:
-                    send_stop_job_command(redis, job_id)
-                except:
-                    print ("- Job already canceled", job_id)
+                cancel(job_id)
+                
     return Response(progress_stream(), mimetype="text/event-stream")
 
 @app.route("/api/cancel", methods=["POST"])
 def cancel_conversion():
     print ("- Canceling")
-    job_id = request.get_json()
-    try:
-        send_stop_job_command(redis, job_id)
+    job_id = secure_filename(request.get_json())
+    cancelable = cancel(job_id)
+    if cancelable:
         print ("- Canceled")
         return jsonify("cancel_success"), 200
-    except:
-        print ("Failed to cancel", job_id)
+    else:
         return jsonify("cancel_failed"), 200
 
 @app.route("/api/getoutput", methods=["POST"])
