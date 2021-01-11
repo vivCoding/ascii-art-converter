@@ -88,6 +88,9 @@ convertButton.click(function(e) {
         } else if (response.status == 413) {
             showError("This file is too large for us! Max size we take is 5 MB");
             return "error";
+        } else if (response.status == 404) {
+            showError("Sorry, looks like service is temporarily unavailable! Maybe try again later?");
+            return "error";
         }
         return response.json();
     }).then(data => {

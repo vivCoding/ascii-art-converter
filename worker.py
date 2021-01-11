@@ -1,9 +1,10 @@
 import redis
 from rq import Worker, Queue, Connection
+import os
+import time
 
-listen = ["high", "default", "low"]
-# TODO: change this to env variable
-redis_url = "redis://localhost:6379"
+listen = ["default"]
+redis_url = "redis://" + os.environ.get("REDIS_URL") +":6379"
 connection = redis.from_url(redis_url)
 
 def start_worker():

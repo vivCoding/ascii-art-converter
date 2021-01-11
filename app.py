@@ -21,8 +21,9 @@ app.config.from_object("config.Config")
 config = app.config
 cors = CORS(app, origins=config["CORS"])
 
-redis = Redis(config["REDIS_URL"])
-queue = Queue(connection=redis)
+if config["REDIS_URL"] != "unavailable":
+    redis = Redis(config["REDIS_URL"])
+    queue = Queue(connection=redis)
 
 TEMP = config["TEMP"]
 OUTPUT= config["OUTPUT"]
@@ -36,11 +37,13 @@ FAILURE_TTL = config["FAILURE_TTL"]
 RESULT_TTL = config["RESULT_TTL"]
 JOB_TIMEOUT = config["JOB_TIMEOUT"]
 
-key_json_file = open("key.json", "w")
-json.dump(config["FIREBASE_KEY"], key_json_file)
-key_json_file.close()
+path_to_key = os.path.join(os.getcwd(), "key.json")
+if not os.path.exists(path_to_key):
+    key_json_file = open(path_to_key, "w")
+    json.dump(config["FIREBASE_KEY"], key_json_file)
+    key_json_file.close()
 
-cred = credentials.Certificate("key.json")
+cred = credentials.Certificate(path_to_key)
 default_app = initialize_app(cred, {
     "storageBucket": config["FIREBASE_BUCKET"]
 })
@@ -55,11 +58,19 @@ def convert():
     print ("-" * 20)
     print ("- Job request received")
 
+    if config["REDIS_URL"] == "unavailable":
+        return jsonify("unavailable"), 404
+
     try:
         data = request.form
         fileUpload = request.files["fileUpload"]
         filename, file_ext = os.path.splitext(fileUpload.filename)
         
+        local_temp = os.path.join(os.getcwd(), TEMP)
+        local_output = os.path.join(os.getcwd(), TEMP)
+        if not os.path.isdir(local_temp) : os.mkdir(local_temp)
+        if not os.path.isdir(local_output) : os.mkdir(local_output)
+
         # filename will consist of random hex and file_ext
         filename = secure_filename(uuid4().hex + file_ext)
         temp_path = os.path.join(TEMP, filename)
@@ -115,6 +126,10 @@ def convert():
 
 def cancel(job_id):
     job = Job.fetch(job_id, connection=redis)
+    temp_blob = bucket.blob(os.path.join(TEMP, job_id))
+    output_blob = bucket.blob(os.path.join(OUTPUT, job_id))
+    if temp_blob.exists() : temp_blob.delete()
+    if output_blob.exists() : output_blob.delete()
     try:
         if job.get_status() == "started":
             send_stop_job_command(redis, job_id)
@@ -174,6 +189,8 @@ def get_output():
         blob = bucket.blob(file_path)
         blob.download_to_filename(file_path)
         blob.delete()
+        print ("- Got output", file_path)
         return send_from_directory(OUTPUT, filename, as_attachment=True), 200
-    except:
+    except Exception as e:
+        print (e)
         return jsonify("firebase_error"), 503

@@ -55,19 +55,19 @@
                         </div>
                         <div class = "optionType">
                             <label title = "Max width of the final image. If width is filled out, must fill out height. Keep blank for no preference">Max Width: </label>
-                            <input name = "maxWidth" id = "maxWidth" type = "number" size = "2"/>
+                            <input name = "maxWidth" id = "maxWidth" type = "number" size = "2" max = "8000"/>
                         </div>
                         <div class = "optionType">
                             <label title = "Max height of the final image. If height is filled out, must fill out width. Keep blank for no preference">Max Height: </label>
-                            <input name = "maxHeight" id = "maxHeight" type = "number" size = "2"/>
+                            <input name = "maxHeight" id = "maxHeight" type = "number" size = "2" max = "8000"/>
                         </div>
                         <div class = "optionType">
                             <label title = "Font size for the characters. The higher the font size, the higher the final image size">Font Size: </label>
-                            <input name = "fontSize" id = "fontSize" type = "number" size = "2" value = "10" min = "1"/>
+                            <input name = "fontSize" id = "fontSize" type = "number" size = "2" value = "10" min = "1" max = "48"/>
                         </div>
                         <div class = "optionType">
                             <label title = "Line spacing between each character. The higher the spacing, the higher the final image size">Spacing: </label>
-                            <input name = "spacing" id = "spacing" type = "number" size = "2" value = "1.1" step = "0.01" min = "0"/>
+                            <input name = "spacing" id = "spacing" type = "number" size = "2" value = "1.1" step = "0.01" min = "0" max = "10"/>
                         </div>
                         <div class = "optionType">
                             <label title = "Characters to use to convert the image pixel intensities. From left to right, lower intensity to higher intensity">Characters: </label>
